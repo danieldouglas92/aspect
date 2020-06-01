@@ -189,7 +189,13 @@ namespace aspect
               }
             }
 
-          // Step 1d: multiply the viscosity by a constant (default value is 1)
+          // Step 1d-1: compute viscosity from Peierls creep law
+          const double viscosity_peierls = peierls_creep.compute_viscosity(edot_ii, pressure, temperature_for_viscosity, j);
+
+          // Step 1d-2: harmonically average diffusion/dislocation/composite and peierls creep viscosity
+          viscosity_pre_yield = (viscosity_pre_yield * viscosity_peierls) / (viscosity_pre_yield + viscosity_peierls);
+
+          // Step 1e: multiply the viscosity by a constant (default value is 1)
           viscosity_pre_yield = constant_viscosity_prefactors.compute_viscosity(viscosity_pre_yield, j);
 
           // Step 2: calculate the viscous stress magnitude
@@ -701,6 +707,14 @@ namespace aspect
           // Dislocation creep parameters
           Rheology::DislocationCreep<dim>::declare_parameters(prm);
 
+          // Peierls creep parameters
+          Rheology::PeierlsCreep<dim>::declare_parameters(prm);
+
+          // Whether to include Peierls creep in the rheological formulation
+          prm.declare_entry ("Include Peierls creep", "false",
+                             Patterns::Bool (),
+                             "Whether to include Peierls creep in the rheological formulation.");
+
           // Constant viscosity prefactor parameters
           Rheology::ConstantViscosityPrefactors<dim>::declare_parameters(prm);
 
@@ -827,6 +841,14 @@ namespace aspect
           // Dislocation creep parameters
           dislocation_creep.initialize_simulator (this->get_simulator());
           dislocation_creep.parse_parameters(prm);
+
+          // Peierls creep parameters
+          use_peierls_creep = prm.get_bool ("Include Peierls creep");
+          if (use_peierls_creep)
+            {
+              peierls_creep.initialize_simulator (this->get_simulator());
+              peierls_creep.parse_parameters(prm);
+            }
 
           // Constant viscosity prefactor parameters
           constant_viscosity_prefactors.initialize_simulator (this->get_simulator());
