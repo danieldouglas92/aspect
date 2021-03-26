@@ -1,0 +1,7 @@
+New: Added a cutoff stress to Rheology::PeierlsCreep.
+
+Below this cutoff stress strain rate is approximated as a quadratic function of stress
+to aid in strain rate convergence when the stress exponent is equal to 0.
+
+<br>
+(Daniel Douglas, 2021/03/23)
