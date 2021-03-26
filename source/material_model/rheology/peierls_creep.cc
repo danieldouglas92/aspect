@@ -336,16 +336,7 @@ namespace aspect
     if (stress < p.stress_c)
       {
         const double b = (p.activation_energy + pressure*p.activation_volume)/(constants::gas_constant * temperature);
-        //const double b_ref = (p.activation_energy + P_ref*p.activation_volume)/(constants::gas_constant*T_ref);
-        //const double c_ref = std::pow(p.stress_c/p.peierls_stress, p.glide_parameter_p);
-        //const double d_ref = std::pow(1. - c_ref, p.glide_parameter_q);
-        //const double s_ref = b_ref*p.glide_parameter_p*p.glide_parameter_q*c_ref*d_ref/(1. - c_ref);
         const double arrhenius = std::exp(-b*p.d_ref);
-        //const double arrhenius_c = std::exp(-b_ref * d_ref);
-        //const double edot_ii_c = p.prefactor * std::pow(p.stress_c, p.stress_exponent) * arrhenius_c;
-        //const double deriv_c = edot_ii_c / p.stress_c * (s_ref + p.stress_exponent);
-        //const double a_c = (deriv_c - edot_ii_c / p.stress_c) / p.stress_c / arrhenius_c;
-        //const double b_c = (2*(edot_ii_c / p.stress_c) - deriv_c) / arrhenius_c;
 
         const double edot_ii = (p.a_c*std::pow(stress, 2.) + p.b_c*stress) * arrhenius;
         const double deriv = (2*p.a_c*stress + p.b_c) * arrhenius;
