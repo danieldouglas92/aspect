@@ -59,7 +59,7 @@ namespace aspect
             creep_parameters.glide_parameter_p = glide_parameters_p[composition];
             creep_parameters.glide_parameter_q = glide_parameters_q[composition];
             creep_parameters.fitting_parameter = fitting_parameters[composition];
-            creep_parameters.stress_coff = stress_coff[composition];
+            creep_parameters.stress_cutoff = stress_cutoff[composition];
           }
         else
           {
@@ -81,8 +81,8 @@ namespace aspect
                                                  glide_parameters_q, composition);
             creep_parameters.fitting_parameter = MaterialModel::MaterialUtilities::phase_average_value(phase_function_values, n_phases_per_composition,
                                                  fitting_parameters, composition);
-            creep_parameters.stress_coff = MaterialModel::MaterialUtilities::phase_average_value(phase_function_values, n_phases_per_composition,
-                                        stress_coff, composition);
+            creep_parameters.stress_cutoff = MaterialModel::MaterialUtilities::phase_average_value(phase_function_values, n_phases_per_composition,
+                                             stress_cutoff, composition);
           }
         return creep_parameters;
       }
@@ -320,22 +320,22 @@ namespace aspect
         * deriv = edot_ii / stress * (s + n)
         */
         const PeierlsCreepParameters p = creep_parameters;
-    if (stress < p.stress_coff)
+    if (stress < p.stress_cutoff)
       {
-        const double T_coff = p.activation_energy/constants::gas_constant;
-        const double P_coff = 0.;
-        const double b_coff = (p.activation_energy + P_coff*p.activation_volume)/(constants::gas_constant*T_coff);
-        const double c_coff = std::pow(p.stress_coff/p.peierls_stress, p.glide_parameter_p);
-        const double d_coff = std::pow(1. - c_coff, p.glide_parameter_q);
-        const double s_coff = b_coff*p.glide_parameter_p*p.glide_parameter_q*c_coff*d_coff/(1. - c_coff);
-        const double arrhenius_coff = std::exp(-b_coff * d_coff);
-        const double edot_ii_coff = p.prefactor * std::pow(p.stress_coff, p.stress_exponent) * arrhenius_coff;
-        const double deriv_coff = edot_ii_coff / p.stress_coff * (s_coff + p.stress_exponent);
-        const double quadratic_term = (deriv_coff - edot_ii_coff / p.stress_coff) / p.stress_coff / arrhenius_coff;
-        const double linear_term = (2*(edot_ii_coff / p.stress_coff) - deriv_coff) / arrhenius_coff;
+        // Let T_cutoff = (E/R), P_cutoff = 0
+        // Then s_cutoff = p*q*c_cutoff*d_cutoff / (1 - c_cutoff)
+        // and arrhenius_cutoff = std::exp(-d_cutoff)
+        const double c_cutoff = std::pow(p.stress_cutoff/p.peierls_stress, p.glide_parameter_p);
+        const double d_cutoff = std::pow(1. - c_cutoff, p.glide_parameter_q);
+        const double s_cutoff = p.glide_parameter_p*p.glide_parameter_q*c_cutoff*d_cutoff/(1. - c_cutoff);
+        const double arrhenius_cutoff = std::exp(-d_cutoff);
+        const double edot_ii_cutoff = p.prefactor * std::pow(p.stress_cutoff, p.stress_exponent) * arrhenius_cutoff;
+        const double deriv_cutoff = edot_ii_cutoff / p.stress_cutoff * (s_cutoff + p.stress_exponent);
+        const double quadratic_term = (deriv_cutoff - edot_ii_cutoff / p.stress_cutoff) / p.stress_cutoff / arrhenius_cutoff;
+        const double linear_term = (2*(edot_ii_cutoff / p.stress_cutoff) - deriv_cutoff) / arrhenius_cutoff;
 
         const double b = (p.activation_energy + pressure*p.activation_volume)/(constants::gas_constant * temperature);
-        const double arrhenius = std::exp(-b*d_coff);
+        const double arrhenius = std::exp(-b*d_cutoff);
         const double edot_ii = (quadratic_term*std::pow(stress, 2.) + linear_term*stress) * arrhenius;
         const double deriv = (2*quadratic_term*stress + linear_term) * arrhenius;
 
@@ -542,7 +542,7 @@ namespace aspect
                                                                   "Peierls glide parameters q",
                                                                   true,
                                                                   expected_n_phases_per_composition);
-        stress_coff = Utilities::parse_map_to_double_array(prm.get("Cutoff stress for Peierls creep"),
+        stress_cutoff = Utilities::parse_map_to_double_array(prm.get("Cutoff stress for Peierls creep"),
                                                          list_of_composition_names,
                                                          has_background_field,
                                                          "Cutoff stress for Peierls creep",
