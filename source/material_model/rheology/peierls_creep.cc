@@ -322,9 +322,17 @@ namespace aspect
         const PeierlsCreepParameters p = creep_parameters;
     if (stress < p.stress_cutoff)
       {
-        // Let T_cutoff = (E/R), P_cutoff = 0
-        // Then s_cutoff = p*q*c_cutoff*d_cutoff / (1 - c_cutoff)
-        // and arrhenius_cutoff = std::exp(-d_cutoff)
+
+        /**
+        * For Peierls creep flow laws that have a stress exponent equal to zero the strain rate does not approach zero as 
+        * stress approaches zero. To ensure convergence in the solver, the strain rate is modelled as a quadratic function
+        * of stress; 
+        * edot_ii = quadratic_term*stress^2 + linear_term*stress
+        * Where the quadratic and linear terms are defined at a constant cutoff temperature and pressure.
+        * T_cutoff = (E/R), P_cutoff = 0
+        * s_cutoff = p*q*c_cutoff*d_cutoff / (1 - c_cutoff)
+        * arrhenius_cutoff = std::exp(-d_cutoff)
+        */
         const double c_cutoff = std::pow(p.stress_cutoff/p.peierls_stress, p.glide_parameter_p);
         const double d_cutoff = std::pow(1. - c_cutoff, p.glide_parameter_q);
         const double s_cutoff = p.glide_parameter_p*p.glide_parameter_q*c_cutoff*d_cutoff/(1. - c_cutoff);
