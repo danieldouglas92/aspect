@@ -551,11 +551,11 @@ namespace aspect
                                                                   true,
                                                                   expected_n_phases_per_composition);
         stress_cutoffs = Utilities::parse_map_to_double_array(prm.get("Cutoff stresses for Peierls creep"),
-                                                             list_of_composition_names,
-                                                             has_background_field,
-                                                             "Cutoff stresses for Peierls creep",
-                                                             true,
-                                                             expected_n_phases_per_composition);
+                                                              list_of_composition_names,
+                                                              has_background_field,
+                                                              "Cutoff stresses for Peierls creep",
+                                                              true,
+                                                              expected_n_phases_per_composition);
       }
     }
   }
