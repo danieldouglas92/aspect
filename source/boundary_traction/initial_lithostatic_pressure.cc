@@ -34,6 +34,8 @@
 #include <aspect/geometry_model/chunk.h>
 #include <aspect/geometry_model/ellipsoidal_chunk.h>
 #include <aspect/geometry_model/box.h>
+#include <aspect/geometry_model/van_Keken_45.h>
+#include <aspect/geometry_model/van_Keken_45deep.h>
 #include <aspect/geometry_model/two_merged_boxes.h>
 #include <aspect/geometry_model/two_merged_chunks.h>
 
@@ -140,6 +142,20 @@ namespace aspect
           // representative point. Therefore, we only get the undeformed (uniform) depth.
           depth_extent = representative_point[dim-1] - Plugins::get_plugin_as_type<const GeometryModel::Box<dim>>(this->get_geometry_model()).get_origin()[dim-1];
         }
+      else if (Plugins::plugin_type_matches<const GeometryModel::vanKeken45<dim>> (this->get_geometry_model()))
+        {
+          representative_point[dim-1]=  Plugins::get_plugin_as_type<const GeometryModel::vanKeken45<dim>>(this->get_geometry_model()).get_extents()[dim-1];
+          // Maximal_depth includes the maximum topography, while we need the topography at the
+          // representative point. Therefore, we only get the undeformed (uniform) depth.
+          depth_extent = representative_point[dim-1] - Plugins::get_plugin_as_type<const GeometryModel::vanKeken45<dim>>(this->get_geometry_model()).get_origin()[dim-1];
+        }
+      else if (Plugins::plugin_type_matches<const GeometryModel::vanKeken45Deep<dim>> (this->get_geometry_model()))
+        {
+          representative_point[dim-1]=  Plugins::get_plugin_as_type<const GeometryModel::vanKeken45Deep<dim>>(this->get_geometry_model()).get_extents()[dim-1];
+          // Maximal_depth includes the maximum topography, while we need the topography at the
+          // representative point. Therefore, we only get the undeformed (uniform) depth.
+          depth_extent = representative_point[dim-1] - Plugins::get_plugin_as_type<const GeometryModel::vanKeken45Deep<dim>>(this->get_geometry_model()).get_origin()[dim-1];
+        }
       else if (Plugins::plugin_type_matches<const GeometryModel::TwoMergedBoxes<dim>> (this->get_geometry_model()))
         {
           representative_point[dim-1]=  Plugins::get_plugin_as_type<const GeometryModel::TwoMergedBoxes<dim>>(this->get_geometry_model()).get_extents()[dim-1];
@@ -179,7 +195,9 @@ namespace aspect
       // Where to calculate the density
       // for cartesian domains
       if (Plugins::plugin_type_matches<const GeometryModel::Box<dim>> (this->get_geometry_model()) ||
-          Plugins::plugin_type_matches<const GeometryModel::TwoMergedBoxes<dim>> (this->get_geometry_model()))
+          Plugins::plugin_type_matches<const GeometryModel::TwoMergedBoxes<dim>> (this->get_geometry_model()) ||
+          Plugins::plugin_type_matches<const GeometryModel::vanKeken45<dim>> (this->get_geometry_model()) ||
+          Plugins::plugin_type_matches<const GeometryModel::vanKeken45Deep<dim>> (this->get_geometry_model()))
         in.position[0] = representative_point;
       // and for spherical domains
       else
@@ -225,7 +243,9 @@ namespace aspect
           // Where to calculate the density:
           // for cartesian domains
           if (Plugins::plugin_type_matches<const GeometryModel::Box<dim>> (this->get_geometry_model()) ||
-              Plugins::plugin_type_matches<const GeometryModel::TwoMergedBoxes<dim>> (this->get_geometry_model()))
+              Plugins::plugin_type_matches<const GeometryModel::TwoMergedBoxes<dim>> (this->get_geometry_model()) ||
+              Plugins::plugin_type_matches<const GeometryModel::vanKeken45<dim>> (this->get_geometry_model()) ||
+              Plugins::plugin_type_matches<const GeometryModel::vanKeken45Deep<dim>> (this->get_geometry_model()))
             {
               // decrease z coordinate with depth increment
               representative_point[dim-1] -= delta_z;
