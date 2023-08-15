@@ -1,4 +1,4 @@
-## Using active particles.
+# Using active particles.
 
 In the examples above, particle properties passively track distinct model
 properties. These particle properties, however, may also be used to actively
@@ -18,14 +18,14 @@ This cookbook,
 modifies two sections of the input file. First, particles are added under the
 `Postprocess` section:
 
-``` prmfile
+```{literalinclude} particles.part.prm
 ```
 
 Here, each particle will carry the `velocity` and `initial composition`
 properties. In order to use the particle initial composition value to modify
 the flow through the material model, we now modify the `Composition` section:
 
-``` prmfile
+```{literalinclude} composition.part.prm
 ```
 
 What this does is the following: It says that there will be two compositional
@@ -47,7 +47,7 @@ fields.
 
 The syntax for interpolation from particles to fields then states that the
 `lower` field will be set to the interpolated value of the `initial lower`
-particle property at the end of each time step, and similarly for the `upper`
+particle property when solving for the composition, and similarly for the `upper`
 field. In turn, the `initial composition` particle property was using the same
 method that one would have used for the compositional field initialization if
 these fields were actually advected along in each time step.

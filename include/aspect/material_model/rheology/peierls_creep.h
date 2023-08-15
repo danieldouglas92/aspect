@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2020 - 2021 by the authors of the ASPECT code.
+  Copyright (C) 2020 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -164,6 +164,17 @@ namespace aspect
                                                     const PeierlsCreepParameters creep_parameters) const;
 
           /**
+           * Compute the natural logarithm of the strain rate norm and its first
+           * derivative with respect to the natural logarithm of the stress norm
+           * based on the exact Peierls creep law.
+           */
+          std::pair<double, double>
+          compute_exact_log_strain_rate_and_derivative (const double log_stress,
+                                                        const double pressure,
+                                                        const double temperature,
+                                                        const PeierlsCreepParameters creep_parameters) const;
+
+          /**
            * Compute the strain rate and first stress derivative
            * as a function of stress based on the selected Peierls creep law.
            * This function uses either the
@@ -238,6 +249,12 @@ namespace aspect
           std::vector<double> glide_parameters_q;
 
           std::vector<double> stress_cutoffs;
+
+          /**
+           * A parameter determines whether a strict cutoff
+           * on the stress is applied to the Peierls creep
+          */
+          bool apply_strict_cutoff;
 
           /**
            * Parameters governing the iteration for the exact

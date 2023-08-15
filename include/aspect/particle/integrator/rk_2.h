@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2015 - 2021 by the authors of the ASPECT code.
+ Copyright (C) 2015 - 2022 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -48,7 +48,6 @@ namespace aspect
            * Look up where the RK2 data is stored. Done once and cached to
            * avoid repeated lookups.
            */
-          virtual
           void
           initialize () override;
 
@@ -98,7 +97,6 @@ namespace aspect
           /**
            * Read the parameters this class declares from the parameter file.
            */
-          virtual
           void
           parse_parameters (ParameterHandler &prm) override;
 

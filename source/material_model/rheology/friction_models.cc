@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2019 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2019 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -94,7 +94,7 @@ namespace aspect
                 friction_function->value(Utilities::convert_array_to_point<dim>(point.get_coordinates()),volume_fraction_index);
 
               // Convert angles from degrees to radians
-              friction_from_function *= numbers::PI/180.0;
+              friction_from_function *= constants::degree_to_radians;
 
               return friction_from_function;
             }
@@ -145,7 +145,7 @@ namespace aspect
                            "\\item ``function'': Specify the friction angle as a function of space and time "
                            "for each compositional field.");
 
-        // Dynamic friction paramters
+        // Dynamic friction parameters
         prm.declare_entry ("Dynamic characteristic strain rate", "1e-12",
                            Patterns::Double (0),
                            "The characteristic strain rate value at which the angle of friction is "
@@ -189,7 +189,7 @@ namespace aspect
                              "A selection that determines the assumed coordinate "
                              "system for the function variables. Allowed values "
                              "are `cartesian', `spherical', and `depth'. `spherical' coordinates "
-                             "are interpreted as r,phi or r,phi,theta in 2D/3D "
+                             "are interpreted as r,phi or r,phi,theta in 2d/3d "
                              "respectively with theta being the polar angle. `depth' "
                              "will create a function, in which only the first "
                              "parameter is non-zero, which is interpreted to "
@@ -235,7 +235,7 @@ namespace aspect
           {
             AssertThrow(angle <= 90,
                         ExcMessage("Dynamic angles of friction must be <= 90 degrees"));
-            angle *= numbers::PI/180.0;
+            angle *= constants::degree_to_radians;
           }
 
         dynamic_friction_smoothness_exponent = prm.get_double("Dynamic friction smoothness exponent");

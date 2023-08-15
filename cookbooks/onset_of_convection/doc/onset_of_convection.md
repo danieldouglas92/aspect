@@ -16,13 +16,13 @@ models with small parameter variations. More details can be found in the
 example assignment below.
 
 
-```{figure-md} fig:convection-box-iterations
+```{figure-md} fig:onset-of-convection-models
 <img src="convection_models.png" style="width:80.0%" />
 
  Onset of convection model with different Rayleigh numbers. Background colors show temperature.
 ```
 
-Slides that describe the different forces controling convective motion (which
+Slides that describe the different forces controlling convective motion (which
 is related to one of the questions in the assignment) can be found [here]( https://www.dropbox.com/s/0wqtg05w7713hdz/06_geophysics_lecture_01_29.pdf?dl=0).
 
 ## Example assignment: Onset of convection in celestial bodies
@@ -40,7 +40,7 @@ celestial body.
 In order to do that, pick a celestial body from the list in Section 3. You can
 also pick one that is not on my list, as long as you can convincingly argue
 that it is made of rock or ice rather than gas (gases have such a low
-viscosity that their physical behaviour is quite different, and we can assume
+viscosity that their physical behavior is quite different, and we can assume
 that a planetary body made of gas always convects). I have also listed
 estimates for the thickness of the mantle for each celestial body (if you pick
 your own, you will have to figure out an approximate value for the mantle
@@ -173,7 +173,7 @@ between models without and with convection. The temperatures should be in a
 reasonable range (you can check the densities in the visualization output in
 ParaView, if you have negative densities, your temperature is too large).
 
-### Visualize the convective behaviour.
+### Visualize the convective behavior.
 
 Now that you know for what parameters convection starts, run a model series of
 3 models for a longer time. Pick one parameter combination of temperature

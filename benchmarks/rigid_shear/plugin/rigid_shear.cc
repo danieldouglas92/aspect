@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2019 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2019 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -17,9 +17,6 @@
   along with ASPECT; see the file LICENSE.  If not see
   <http://www.gnu.org/licenses/>.
 */
-
-#ifndef aspect_rigid_shear_h
-#define aspect_rigid_shear_h
 
 #include <aspect/gravity_model/interface.h>
 #include <aspect/material_model/interface.h>
@@ -95,8 +92,8 @@ namespace aspect
             : Function<dim>(n_components),
               transient(transient) {}
 
-          virtual void vector_value(const Point<dim> &p,
-                                    Vector<double> &values) const
+          void vector_value(const Point<dim> &p,
+                            Vector<double> &values) const override
           {
             const double pi = numbers::PI;
             const double t = this->get_time();
@@ -128,8 +125,8 @@ namespace aspect
     class RigidShearMaterial : public MaterialModel::Interface<dim>, public SimulatorAccess<dim>
     {
       public:
-        virtual void evaluate(const MaterialModel::MaterialModelInputs<dim> &in,
-                              MaterialModel::MaterialModelOutputs<dim> &out) const
+        void evaluate(const MaterialModel::MaterialModelInputs<dim> &in,
+                      MaterialModel::MaterialModelOutputs<dim> &out) const override
         {
           const double t = (this->simulator_is_past_initialization()) ? this->get_time() : 0.0;
 
@@ -222,7 +219,7 @@ namespace aspect
     class RigidShearGravity : public aspect::GravityModel::Interface<dim>, public aspect::SimulatorAccess<dim>
     {
       public:
-        virtual Tensor<1,dim> gravity_vector (const Point<dim> &pos) const
+        Tensor<1,dim> gravity_vector (const Point<dim> &pos) const override
         {
           const double pi = numbers::PI;
           const double t = (this->simulator_is_past_initialization()) ? this->get_time() : 0.0;
@@ -256,9 +253,8 @@ namespace aspect
         /**
          * Generate error output for velocity, pressure, and density.
          */
-        virtual
         std::pair<std::string, std::string>
-        execute(TableHandler &statistics)
+        execute(TableHandler &statistics) override
         {
           const RigidShearMaterial<dim> &
           material_model
@@ -380,4 +376,3 @@ namespace aspect
                                   "benchmarks defined in the paper Gassmoeller et al. referenced above.")
   }
 }
-#endif

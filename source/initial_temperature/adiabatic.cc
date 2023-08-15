@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -241,7 +241,7 @@ namespace aspect
                 Plugins::get_plugin_as_type<const GeometryModel::SphericalShell<dim>> (this->get_geometry_model());
 
               const double inner_radius = shell_geometry_model.inner_radius();
-              const double half_opening_angle = numbers::PI/180.0 * 0.5 * shell_geometry_model.opening_angle();
+              const double half_opening_angle = constants::degree_to_radians * 0.5 * shell_geometry_model.opening_angle();
               if (dim==2)
                 {
                   // choose the center of the perturbation at half angle along the inner radius
@@ -407,7 +407,7 @@ namespace aspect
                              "profile for calculating the thermal diffusivity. "
                              "This function is one-dimensional and depends only on depth. The format of this "
                              "functions follows the syntax understood by the "
-                             "muparser library, see Section~\\ref{sec:muparser-format}.");
+                             "muparser library, see {ref}`sec:run-aspect:parameters-overview:muparser-format`.");
           prm.declare_entry ("Top boundary layer age model", "constant",
                              Patterns::Selection ("constant|function|ascii data"),
                              "How to define the age of the top thermal boundary layer. "
@@ -443,7 +443,7 @@ namespace aspect
                                "A selection that determines the assumed coordinate "
                                "system for the function variables. Allowed values "
                                "are `cartesian', `spherical', and `depth'. `spherical' coordinates "
-                               "are interpreted as r,phi or r,phi,theta in 2D/3D "
+                               "are interpreted as r,phi or r,phi,theta in 2d/3d "
                                "respectively with theta being the polar angle. `depth' "
                                "will create a function, in which only the first "
                                "parameter is non-zero, which is interpreted to "

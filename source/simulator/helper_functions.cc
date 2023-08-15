@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -227,7 +227,7 @@ namespace aspect
     BoundaryComposition::Manager<dim>::write_plugin_graph(out);
     BoundaryFluidPressure::write_plugin_graph<dim>(out);
     BoundaryTemperature::Manager<dim>::write_plugin_graph(out);
-    BoundaryTraction::write_plugin_graph<dim>(out);
+    BoundaryTraction::Manager<dim>::write_plugin_graph(out);
     BoundaryVelocity::Manager<dim>::write_plugin_graph(out);
     InitialTopographyModel::write_plugin_graph<dim>(out);
     GeometryModel::write_plugin_graph<dim>(out);
@@ -1343,8 +1343,8 @@ namespace aspect
      * 1) one dimensional Gauss points; 2) one dimensional Gauss-Lobatto points.
      * We require that the Gauss-Lobatto points (2) appear in only one direction.
      * Therefore, possible combination
-     * in 2D: the combinations are 21, 12
-     * in 3D: the combinations are 211, 121, 112
+     * in 2d: the combinations are 21, 12
+     * in 3d: the combinations are 211, 121, 112
      */
     const QGauss<1> quadrature_formula_1 (advection_field.polynomial_degree(introspection)+1);
     const QGaussLobatto<1> quadrature_formula_2 (advection_field.polynomial_degree(introspection)+1);
@@ -2115,7 +2115,8 @@ namespace aspect
                   }
 
                 // ... and change the boundary id of any outflow boundary faces.
-                if (integrated_flow > 0)
+                // If there is no flow, we do not want to apply dirichlet boundary conditions either.
+                if (integrated_flow >= 0)
                   face->set_boundary_id(face->boundary_id() + offset);
               }
           }

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2013 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2013 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -120,28 +120,43 @@ namespace aspect
          * @param values The output vector of depth averaged values. The
          * function takes the pre-existing size of this vector as the number
          * of depth slices.
+         *
+         * @deprecated: This function is deprecated.
+         * Use the function temperature() for specific positions instead.
          */
+        DEAL_II_DEPRECATED
         virtual
         void get_adiabatic_temperature_profile(std::vector<double> &values) const;
 
         /**
          * Like get_adiabatic_temperature_profile() but for the pressure.
+         *
+         * @deprecated: This function is deprecated.
+         * Use the function pressure() for specific positions instead.
          */
+        DEAL_II_DEPRECATED
         virtual
         void get_adiabatic_pressure_profile(std::vector<double> &values) const;
 
         /**
          * Like get_adiabatic_temperature_profile() but for the density.
+         *
+         * @deprecated: This function is deprecated.
+         * Use the function density() for specific positions instead.
          */
+        DEAL_II_DEPRECATED
         virtual
         void get_adiabatic_density_profile(std::vector<double> &values) const;
 
         /**
          * Like get_adiabatic_temperature_profile() but for the density derivative.
+         *
+         * @deprecated: This function is deprecated.
+         * Use the function density_derivative() for specific positions instead.
          */
+        DEAL_II_DEPRECATED
         virtual
         void get_adiabatic_density_derivative_profile(std::vector<double> &values) const;
-
 
         /**
          * Declare the parameters this class takes through input files. The

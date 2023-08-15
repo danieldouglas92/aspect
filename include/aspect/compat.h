@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2015 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -30,53 +30,7 @@
 namespace big_mpi
 {
 
-#if DEAL_II_VERSION_GTE(9,4,0)
-
   using dealii::Utilities::MPI::broadcast;
-
-#else
-
-  inline MPI_Datatype
-  mpi_type_id(const char *)
-  {
-    return MPI_CHAR;
-  }
-
-  /**
-   * Broadcast the information in @p buffer from @p root to all
-   * other ranks.
-   */
-  template <typename T>
-  void
-  broadcast(T                 *buffer,
-            const size_t       count,
-            const unsigned int root,
-            const MPI_Comm    &comm)
-  {
-    Assert(root < dealii::Utilities::MPI::n_mpi_processes(comm),
-           dealii::ExcMessage("Invalid root rank specified."));
-
-    // MPI_Bcast's count is a signed int, so send at most 2^31 in each
-    // iteration:
-    const size_t max_send_count = std::numeric_limits<signed int>::max();
-
-    size_t total_sent_count = 0;
-    while (total_sent_count < count)
-      {
-        const size_t current_count =
-          std::min(count - total_sent_count, max_send_count);
-
-        const int ierr = MPI_Bcast(buffer + total_sent_count,
-                                   current_count,
-                                   mpi_type_id(buffer),
-                                   root,
-                                   comm);
-        AssertThrowMPI(ierr);
-        total_sent_count += current_count;
-      }
-
-  }
-#endif
 
 }
 
@@ -98,7 +52,7 @@ namespace dealii
       template <int dim>
       struct VectorDoFTuple
       {
-        types::global_dof_index dof_indices[dim];
+        std::array<types::global_dof_index,dim> dof_indices;
 
         VectorDoFTuple()
         {
@@ -110,28 +64,19 @@ namespace dealii
         bool
         operator<(const VectorDoFTuple<dim> &other) const
         {
-          for (unsigned int i = 0; i < dim; ++i)
-            if (dof_indices[i] < other.dof_indices[i])
-              return true;
-            else if (dof_indices[i] > other.dof_indices[i])
-              return false;
-          return false;
+          return (dof_indices < other.dof_indices);
         }
 
         bool
         operator==(const VectorDoFTuple<dim> &other) const
         {
-          for (unsigned int i = 0; i < dim; ++i)
-            if (dof_indices[i] != other.dof_indices[i])
-              return false;
-
-          return true;
+          return (dof_indices == other.dof_indices);
         }
 
         bool
         operator!=(const VectorDoFTuple<dim> &other) const
         {
-          return !(*this == other);
+          return (dof_indices != other.dof_indices);
         }
       };
 
@@ -427,9 +372,9 @@ namespace dealii
 
 
       /**
-           * Compute the mappings from vector degrees of freedom to normal vectors @p dof_to_normals_map
-           * and vector degrees of freedom to prescribed normal fluxes @p dof_vector_to_b_values.
-           */
+       * Compute the mappings from vector degrees of freedom to normal vectors @p dof_to_normals_map
+       * and vector degrees of freedom to prescribed normal fluxes @p dof_vector_to_b_values.
+       */
       template <int dim, int spacedim>
       void
       map_dofs_to_normal_vectors_and_normal_fluxes(

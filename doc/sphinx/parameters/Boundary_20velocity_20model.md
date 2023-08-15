@@ -21,7 +21,7 @@ Note that when &ldquo;Use years in output instead of seconds&rdquo; is set to tr
 
 &lsquo;ascii data&rsquo;: Implementation of a model in which the boundary velocity is derived from files containing data in ascii format. Note the required format of the input data: The first lines may contain any number of comments if they begin with &lsquo;#&rsquo;, but one of these lines needs to contain the number of grid points in each dimension as for example &lsquo;# POINTS: 3 3&rsquo;. The order of the data columns has to be &lsquo;x&rsquo;, &lsquo;velocity${}_x$&rsquo;, &lsquo;velocity${}_y$&rsquo; in a 2d model or &lsquo;x&rsquo;, &lsquo;y&rsquo;, &lsquo;velocity${}_x$&rsquo;, &lsquo;velocity${}_y$&rsquo;, &lsquo;velocity${}_z$&rsquo; in a 3d model. Note that the data in the input files need to be sorted in a specific order: the first coordinate needs to ascend first, followed by the second in order to assign the correct data to the prescribed coordinates.If you use a spherical model, then the assumed grid changes. &lsquo;x&rsquo; will be replaced by the radial distance of the point to the bottom of the model, &lsquo;y&rsquo; by the azimuth angle and &lsquo;z&rsquo; by the polar angle measured positive from the north pole. The grid will be assumed to be a latitude-longitude grid. Note that the order of spherical coordinates is &lsquo;r&rsquo;, &lsquo;phi&rsquo;, &lsquo;theta&rsquo; and not &lsquo;r&rsquo;, &lsquo;theta&rsquo;, &lsquo;phi&rsquo;, since this allows for dimension independent expressions. Velocities can be specified using cartesian (by default) or spherical unit vectors. No matter which geometry model is chosen, the unit of the velocities is assumed to be m/s or m/yr depending on the &lsquo;Use years in output instead of seconds&rsquo; flag. If you provide velocities in cm/yr, set the &lsquo;Scale factor&rsquo; option to 0.01.
 
-&lsquo;function&rsquo;: Implementation of a model in which the boundary velocity is given in terms of an explicit formula that is elaborated in the parameters in section &ldquo;Boundary velocity model|Function&rdquo;. The format of these functions follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}.
+&lsquo;function&rsquo;: Implementation of a model in which the boundary velocity is given in terms of an explicit formula that is elaborated in the parameters in section &ldquo;Boundary velocity model|Function&rdquo;. The format of these functions follows the syntax understood by the muparser library, see {ref}`sec:run-aspect:parameters-overview:muparser-format`.
 
 The formula you describe in the mentioned section is a semicolon separated list of velocities for each of the $d$ components of the velocity vector. These $d$ formulas are interpreted as having units m/s, unless the global input parameter &ldquo;Use years in output instead of seconds&rdquo; is set, in which case we interpret the formula expressions as having units m/year.
 
@@ -91,7 +91,7 @@ The names of the boundaries listed here can either by numbers (in which case the
 
 **Pattern:** [Double 0...MAX_DOUBLE (inclusive)]
 
-**Documentation:** The &lsquo;First data file model time&rsquo; parameter has been deactivated and will be removed in a future release. Do not use this paramter and instead provide data files starting from the model start time.
+**Documentation:** The &lsquo;First data file model time&rsquo; parameter has been deactivated and will be removed in a future release. Do not use this parameter and instead provide data files starting from the model start time.
 
 (parameters:Boundary_20velocity_20model/Ascii_20data_20model/First_20data_20file_20number)=
 ### __Parameter name:__ First data file number
@@ -115,7 +115,7 @@ The names of the boundaries listed here can either by numbers (in which case the
 
 **Pattern:** [Bool]
 
-**Documentation:** Specify velocity as r, phi, and theta components instead of x, y, and z. Positive velocities point up, east, and north (in 3D) or out and clockwise (in 2D). This setting only makes sense for spherical geometries.
+**Documentation:** Specify velocity as r, phi, and theta components instead of x, y, and z. Positive velocities point up, east, and north (in 3d) or out and clockwise (in 2d). This setting only makes sense for spherical geometries.
 
 (parameters:Boundary_20velocity_20model/Function)=
 ## **Subsection:** Boundary velocity model / Function
@@ -125,7 +125,7 @@ The names of the boundaries listed here can either by numbers (in which case the
 
 **Pattern:** [Selection cartesian|spherical|depth ]
 
-**Documentation:** A selection that determines the assumed coordinate system for the function variables. Allowed values are &lsquo;cartesian&rsquo;, &lsquo;spherical&rsquo;, and &lsquo;depth&rsquo;. &lsquo;spherical&rsquo; coordinates are interpreted as r,phi or r,phi,theta in 2D/3D respectively with theta being the polar angle. &lsquo;depth&rsquo; will create a function, in which only the first parameter is non-zero, which is interpreted to be the depth of the point.
+**Documentation:** A selection that determines the assumed coordinate system for the function variables. Allowed values are &lsquo;cartesian&rsquo;, &lsquo;spherical&rsquo;, and &lsquo;depth&rsquo;. &lsquo;spherical&rsquo; coordinates are interpreted as r,phi or r,phi,theta in 2d/3d respectively with theta being the polar angle. &lsquo;depth&rsquo; will create a function, in which only the first parameter is non-zero, which is interpreted to be the depth of the point.
 
 (parameters:Boundary_20velocity_20model/Function/Function_20constants)=
 ### __Parameter name:__ Function constants
@@ -153,7 +153,7 @@ If the function you are describing represents a vector-valued function with mult
 
 **Pattern:** [Bool]
 
-**Documentation:** Specify velocity as $r$, $\phi$, and $\theta$ components instead of $x$, $y$, and $z$. Positive velocities point up, east, and north (in 3D) or out and clockwise (in 2D). This setting only makes sense for spherical geometries.
+**Documentation:** Specify velocity as $r$, $\phi$, and $\theta$ components instead of $x$, $y$, and $z$. Positive velocities point up, east, and north (in 3d) or out and clockwise (in 2d). This setting only makes sense for spherical geometries.
 
 (parameters:Boundary_20velocity_20model/Function/Variable_20names)=
 ### __Parameter name:__ Variable names
@@ -219,7 +219,7 @@ If the function you are describing represents a vector-valued function with mult
 
 **Pattern:** [Anything]
 
-**Documentation:** Point that determines the plane in which a 2D model lies in. Has to be in the format &lsquo;a,b&rsquo; where a and b are theta (polar angle) and phi in radians. This value is not utilized in 3D geometries, and can therefore be set to the default or any user-defined quantity.
+**Documentation:** Point that determines the plane in which a 2d model lies in. Has to be in the format &lsquo;a,b&rsquo; where a and b are theta (polar angle) and phi in radians. This value is not utilized in 3d geometries, and can therefore be set to the default or any user-defined quantity.
 
 (parameters:Boundary_20velocity_20model/GPlates_20model/Point_20two)=
 ### __Parameter name:__ Point two
@@ -227,7 +227,7 @@ If the function you are describing represents a vector-valued function with mult
 
 **Pattern:** [Anything]
 
-**Documentation:** Point that determines the plane in which a 2D model lies in. Has to be in the format &lsquo;a,b&rsquo; where a and b are theta (polar angle) and phi in radians. This value is not utilized in 3D geometries, and can therefore be set to the default or any user-defined quantity.
+**Documentation:** Point that determines the plane in which a 2d model lies in. Has to be in the format &lsquo;a,b&rsquo; where a and b are theta (polar angle) and phi in radians. This value is not utilized in 3d geometries, and can therefore be set to the default or any user-defined quantity.
 
 (parameters:Boundary_20velocity_20model/GPlates_20model/Scale_20factor)=
 ### __Parameter name:__ Scale factor

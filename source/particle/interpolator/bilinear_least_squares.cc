@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2017 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2017 - 2023 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -115,7 +115,7 @@ namespace aspect
         for (typename ParticleHandler<dim>::particle_iterator particle = particle_range.begin();
              particle != particle_range.end(); ++particle, ++particle_index)
           {
-            const auto &particle_property_value = particle->get_properties();
+            const ArrayView<double> particle_property_value = particle->get_properties();
             for (unsigned int property_index = 0; property_index < n_particle_properties; ++property_index)
               {
                 if (selected_properties[property_index] == true)
@@ -394,8 +394,8 @@ namespace aspect
     {
       ASPECT_REGISTER_PARTICLE_INTERPOLATOR(BilinearLeastSquares,
                                             "bilinear least squares",
-                                            "Uses linear least squares to obtain the slopes and center of a 2D or "
-                                            "3D plane from the particle positions and a particular property value "
+                                            "Uses linear least squares to obtain the slopes and center of a 2d or "
+                                            "3d plane from the particle positions and a particular property value "
                                             "on those particles. "
                                             "Interpolate this property onto a vector of points. If the limiter is "
                                             "enabled then it will ensure the interpolated properties do not exceed the "

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -25,8 +25,6 @@
 #include <aspect/simulator_access.h>
 #include <aspect/initial_composition/interface.h>
 #include <aspect/material_model/interface.h>
-#include <fstream>
-#include <iostream>
 #include <array>
 
 #include <boost/lexical_cast.hpp>
@@ -518,7 +516,7 @@ namespace aspect
                                               "but the computation of properties is optimized in speed "
                                               "if they are."
                                               "\n"
-                                              "If the plugin is used in 2D it will use an equatorial "
+                                              "If the plugin is used in 2d it will use an equatorial "
                                               "slice of the seismic tomography model.")
   }
 }

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -408,10 +408,10 @@ namespace aspect
 
 
   template <int dim>
-  const std::map<types::boundary_id,std::unique_ptr<BoundaryTraction::Interface<dim>>> &
-  SimulatorAccess<dim>::get_boundary_traction () const
+  const BoundaryTraction::Manager<dim> &
+  SimulatorAccess<dim>::get_boundary_traction_manager () const
   {
-    return simulator->boundary_traction;
+    return simulator->boundary_traction_manager;
   }
 
 
@@ -421,17 +421,6 @@ namespace aspect
   SimulatorAccess<dim>::has_boundary_temperature () const
   {
     return (get_boundary_temperature_manager().get_fixed_temperature_boundary_indicators().size() > 0);
-  }
-
-
-
-  template <int dim>
-  const BoundaryTemperature::Interface<dim> &
-  SimulatorAccess<dim>::get_boundary_temperature () const
-  {
-    Assert (get_boundary_temperature_manager().get_active_boundary_temperature_conditions().size() == 1,
-            ExcMessage("You can only call this function if exactly one boundary temperature plugin is active."));
-    return *(get_boundary_temperature_manager().get_active_boundary_temperature_conditions().front());
   }
 
 
@@ -461,17 +450,6 @@ namespace aspect
   SimulatorAccess<dim>::has_boundary_composition () const
   {
     return (get_boundary_composition_manager().get_fixed_composition_boundary_indicators().size() > 0);
-  }
-
-
-
-  template <int dim>
-  const BoundaryComposition::Interface<dim> &
-  SimulatorAccess<dim>::get_boundary_composition () const
-  {
-    Assert (get_boundary_composition_manager().get_active_boundary_composition_conditions().size() == 1,
-            ExcMessage("You can only call this function if exactly one boundary composition plugin is active."));
-    return *(get_boundary_composition_manager().get_active_boundary_composition_conditions().front());
   }
 
 
@@ -569,16 +547,6 @@ namespace aspect
   }
 
 
-  template <int dim>
-  const InitialTemperature::Interface<dim> &
-  SimulatorAccess<dim>::get_initial_temperature () const
-  {
-    Assert (get_initial_temperature_manager().get_active_initial_temperature_conditions().size() == 1,
-            ExcMessage("You can only call this function if exactly one initial temperature plugin is active."));
-    return *(get_initial_temperature_manager().get_active_initial_temperature_conditions().front());
-  }
-
-
 
   template <int dim>
   std::shared_ptr<const InitialTemperature::Manager<dim>>
@@ -616,17 +584,6 @@ namespace aspect
                         "beyond the time frame that the Simulator object "
                         "keeps track of it."));
     return *simulator->initial_temperature_manager;
-  }
-
-
-
-  template <int dim>
-  const InitialComposition::Interface<dim> &
-  SimulatorAccess<dim>::get_initial_composition () const
-  {
-    Assert (get_initial_composition_manager().get_active_initial_composition_conditions().size() == 1,
-            ExcMessage("You can only call this function if only one initial composition plugin is active."));
-    return *(get_initial_composition_manager().get_active_initial_composition_conditions().front());
   }
 
 

@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -36,6 +36,7 @@
 
 #include <aspect/simulator/assemblers/interface.h>
 #include <aspect/geometry_model/initial_topography_model/zero_topography.h>
+#include <aspect/material_model/rheology/elasticity.h>
 
 #include <deal.II/base/index_set.h>
 #include <deal.II/base/conditional_ostream.h>
@@ -109,7 +110,7 @@ namespace aspect
       if (geometry_model.has_curved_elements())
         return std::make_unique<MappingQCache<dim>>(4);
 
-#if !DEAL_II_VERSION_GTE(9,4,0) || DEAL_II_VERSION_GTE(9,4,1)
+#if DEAL_II_VERSION_GTE(9,4,1)
       if (Plugins::plugin_type_matches<const InitialTopographyModel::ZeroTopography<dim>>(initial_topography_model))
         return std::make_unique<MappingCartesian<dim>>();
 #else
@@ -249,7 +250,7 @@ namespace aspect
       {
         // only open the log file on processor 0, the other processors won't be
         // writing into the stream anyway
-        log_file_stream.open((parameters.output_directory + "log.txt").c_str(),
+        log_file_stream.open(parameters.output_directory + "log.txt",
                              parameters.resume_computation ? std::ios_base::app : std::ios_base::out);
 
         // we already printed the header to the screen, so here we just dump it
@@ -302,7 +303,25 @@ namespace aspect
     material_model->parse_parameters (prm);
     material_model->initialize ();
 
-    heating_model_manager.initialize_simulator (*this);
+    // Make sure that the material model supports elasticity when it is requested,
+    // by checking that the material model creates the necessary material model
+    // outputs.
+    if (parameters.enable_elasticity)
+      {
+        // Set up outputs for one point
+        MaterialModel::MaterialModelOutputs<dim> out(1,
+                                                     introspection.n_compositional_fields);
+
+        material_model->create_additional_named_outputs(out);
+
+        MaterialModel::ElasticAdditionalOutputs<dim> *elastic_outputs = out.template get_additional_output<MaterialModel::ElasticAdditionalOutputs<dim>>();
+
+        // Throw if the elastic_outputs do not exist
+        AssertThrow(elastic_outputs != nullptr,
+                    ExcMessage("Elasticity is enabled, but not supported by the material model."));
+      }
+
+    heating_model_manager.initialize_simulator(*this);
     heating_model_manager.parse_parameters (prm);
 
     if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(gravity_model.get()))
@@ -370,6 +389,10 @@ namespace aspect
       sim->initialize_simulator (*this);
     adiabatic_conditions->parse_parameters (prm);
     adiabatic_conditions->initialize ();
+
+    // Create a boundary traction manager
+    boundary_traction_manager.initialize_simulator (*this);
+    boundary_traction_manager.parse_parameters (prm);
 
     // Initialize the mesh deformation handler
     if (parameters.mesh_deformation_enabled)
@@ -467,18 +490,6 @@ namespace aspect
                              "has not been tested in non-Cartesian geometries and currently requires "
                              "the use of a Cartesian geometry model."));
 
-    for (const auto &p : parameters.prescribed_traction_boundary_indicators)
-      boundary_traction[p.first]
-        = BoundaryTraction::create_boundary_traction<dim> (p.second.second);
-
-    for (auto &bv : boundary_traction)
-      {
-        if (SimulatorAccess<dim> *sim = dynamic_cast<SimulatorAccess<dim>*>(bv.second.get()))
-          sim->initialize_simulator(*this);
-        bv.second->parse_parameters (prm);
-        bv.second->initialize ();
-      }
-
     std::set<types::boundary_id> open_velocity_boundary_indicators
       = geometry_model->get_used_boundary_indicators();
     for (const auto &p : boundary_velocity_manager.get_active_boundary_velocity_names())
@@ -517,19 +528,13 @@ namespace aspect
     // Only write the parameter files on the root node to avoid file system conflicts
     if (Utilities::MPI::this_mpi_process(mpi_communicator) == 0)
       {
-        std::ofstream prm_out ((parameters.output_directory + "parameters.prm").c_str());
+        std::ofstream prm_out ((parameters.output_directory + "parameters.prm"));
         AssertThrow (prm_out,
                      ExcMessage (std::string("Could not open file <") +
                                  parameters.output_directory + "parameters.prm>."));
         prm.print_parameters(prm_out, ParameterHandler::Text);
 
-        std::ofstream tex_out ((parameters.output_directory + "parameters.tex").c_str());
-        AssertThrow (tex_out,
-                     ExcMessage (std::string("Could not open file <") +
-                                 parameters.output_directory + "parameters.tex>."));
-        prm.print_parameters(tex_out, ParameterHandler::LaTeX);
-
-        std::ofstream json_out ((parameters.output_directory + "parameters.json").c_str());
+        std::ofstream json_out ((parameters.output_directory + "parameters.json"));
         AssertThrow (json_out,
                      ExcMessage (std::string("Could not open file <") +
                                  parameters.output_directory + "parameters.json>."));
@@ -597,25 +602,12 @@ namespace aspect
 
     nonlinear_iteration = 0;
 
+    signals.start_timestep(*this);
+
     // Copy particle handler to restore particle location and properties
     // before repeating a timestep
     if (particle_world.get() != nullptr)
       particle_world->backup_particles();
-
-    // Re-compute the pressure scaling factor. In some sense, it would be nice
-    // if we did this not just once per time step, but once for each solve --
-    // i.e., multiple times per time step if we iterate out the nonlinearity
-    // during a Newton or Picard iteration. But that's more work,
-    // and the function would need to be called in more different places.
-    // Unless we have evidence that that's necessary, let's assume that
-    // the reference viscosity does not change too much between nonlinear
-    // iterations and that it's ok to update it only once per time step.
-    //
-    // The call to this function must precede the one to the computation
-    // of constraints because some kinds of constraints require scaling
-    // pressure degrees of freedom to a size adjusted by the pressure_scaling
-    // factor.
-    pressure_scaling = compute_pressure_scaling_factor();
 
     // then interpolate the current boundary velocities. copy constraints
     // into current_constraints and then add to current_constraints
@@ -651,8 +643,7 @@ namespace aspect
     // that end up in the bilinear form. we update those that end up in
     // the constraints object when calling compute_current_constraints()
     // above
-    for (auto &p : boundary_traction)
-      p.second->update ();
+    boundary_traction_manager.update();
   }
 
 
@@ -1372,7 +1363,7 @@ namespace aspect
                                                       p.first,
                                                       vel,
                                                       constraints,
-                                                      mask);
+                                                      ComponentMask(mask));
           }
         else
           {
@@ -1381,7 +1372,7 @@ namespace aspect
                                                       p.first,
                                                       Functions::ZeroFunction<dim>(introspection.n_components),
                                                       constraints,
-                                                      mask);
+                                                      ComponentMask(mask));
           }
       }
   }
@@ -1663,20 +1654,21 @@ namespace aspect
             cell->clear_coarsen_flag ();
         }
 
-      std::vector<const LinearAlgebra::BlockVector *> x_system (2);
-      x_system[0] = &solution;
-      x_system[1] = &old_solution;
+
+      // Next set up whatever is necessary to transfer the solution from old
+      // to new mesh:
+      std::vector<const LinearAlgebra::BlockVector *> x_system
+        = { &solution, &old_solution };
 
       if (parameters.mesh_deformation_enabled)
-        x_system.push_back( &mesh_deformation->mesh_velocity );
+        x_system.push_back(&mesh_deformation->mesh_velocity);
 
-      std::vector<const LinearAlgebra::Vector *> x_fs_system (3);
-
+      std::vector<const LinearAlgebra::Vector *> x_fs_system;
       if (parameters.mesh_deformation_enabled)
         {
-          x_fs_system[0] = &mesh_deformation->mesh_displacements;
-          x_fs_system[1] = &mesh_deformation->old_mesh_displacements;
-          x_fs_system[2] = &mesh_deformation->initial_topography;
+          x_fs_system.push_back (&mesh_deformation->mesh_displacements);
+          x_fs_system.push_back (&mesh_deformation->old_mesh_displacements);
+          x_fs_system.push_back (&mesh_deformation->initial_topography);
           mesh_deformation_trans
             = std::make_unique<parallel::distributed::SolutionTransfer<dim,LinearAlgebra::Vector>>
               (mesh_deformation->mesh_deformation_dof_handler);
@@ -1687,12 +1679,28 @@ namespace aspect
       signals.pre_refinement_store_user_data(triangulation);
 
 
-      {
 
-      }
       exchange_refinement_flags();
 
       triangulation.prepare_coarsening_and_refinement();
+      bool any_flags_set = false;
+      {
+        for (const auto &cell:dof_handler.active_cell_iterators())
+          {
+            if (cell->refine_flag_set() || cell->coarsen_flag_set())
+              {
+                any_flags_set = true;
+                break;
+              }
+          }
+      }
+      const bool mesh_changed = Utilities::MPI::max(any_flags_set?1:0,mpi_communicator) == 1 ? true : false;
+      if (!mesh_changed)
+        {
+          pcout << "Skipping mesh refinement, because the mesh did not change.\n" << std::endl;
+          return;
+        }
+
       system_trans.prepare_for_coarsening_and_refinement(x_system);
 
       if (parameters.mesh_deformation_enabled)
@@ -1717,9 +1725,8 @@ namespace aspect
       if (parameters.mesh_deformation_enabled)
         distributed_mesh_velocity.reinit(introspection.index_sets.system_partitioning, mpi_communicator);
 
-      std::vector<LinearAlgebra::BlockVector *> system_tmp (2);
-      system_tmp[0] = &distributed_system;
-      system_tmp[1] = &old_distributed_system;
+      std::vector<LinearAlgebra::BlockVector *> system_tmp
+        = { &distributed_system, &old_distributed_system};
 
       if (parameters.mesh_deformation_enabled)
         system_tmp.push_back(&distributed_mesh_velocity);
@@ -1746,6 +1753,12 @@ namespace aspect
       constraints.distribute (old_distributed_system);
       old_solution = old_distributed_system;
 
+      // We need the current linearization point at the start of the new time step
+      // when we set the boundary conditions for advected fields (to determine parts
+      // of the boundary with outflow). Therefore, we here set it to the solution
+      // vector, but it will be reinitialized the next time the equations are solved.
+      current_linearization_point = distributed_system;
+
       // do the same as above, but for the mesh deformation solution
       if (parameters.mesh_deformation_enabled)
         {
@@ -1763,10 +1776,11 @@ namespace aspect
           distributed_initial_topography.reinit(mesh_deformation->mesh_locally_owned,
                                                 mpi_communicator);
 
-          std::vector<LinearAlgebra::Vector *> system_tmp (3);
-          system_tmp[0] = &distributed_mesh_displacements;
-          system_tmp[1] = &distributed_old_mesh_displacements;
-          system_tmp[2] = &distributed_initial_topography;
+          std::vector<LinearAlgebra::Vector *> system_tmp
+          = { &distributed_mesh_displacements,
+              &distributed_old_mesh_displacements,
+              &distributed_initial_topography
+            };
 
           mesh_deformation_trans->interpolate (system_tmp);
 
@@ -1875,7 +1889,7 @@ namespace aspect
 
         case NonlinearSolver::single_Advection_iterated_Newton_Stokes:
         {
-          solve_single_advection_iterated_newton_stokes();
+          solve_single_advection_and_iterated_newton_stokes();
           break;
         }
 

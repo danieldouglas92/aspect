@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2015 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2015 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -90,6 +90,14 @@ namespace aspect
      * argument: A SimulatorAccess object that describes the simulator.
      */
     boost::signals2::signal<void (const SimulatorAccess<dim> &)>  post_set_initial_state;
+
+    /**
+     * A signal that is called at the beginning of each time step.
+     *
+     * The functions (slots) that can attach to this signal need to take one
+     * argument: A SimulatorAccess object that describes the simulator.
+     */
+    boost::signals2::signal<void (const SimulatorAccess<dim> &)>  start_timestep;
 
     /**
      * A signal that is called at the end of setting up the
@@ -275,6 +283,26 @@ namespace aspect
                                   aspect::Assemblers::Manager<dim> &)>
     set_assemblers;
   };
+
+
+  // Explain to the compiler that we instantiate this class elsewhere, along
+  // with its static members. This is necessary to avoid warnings by some
+  // compilers.
+  extern template struct SimulatorSignals<2>;
+  extern template
+  boost::signals2::signal<void (const unsigned int aspect_dim, ParameterHandler &prm)>
+  SimulatorSignals<2>::declare_additional_parameters;
+  extern template
+  boost::signals2::signal<void (const Parameters<2> &, ParameterHandler &)>
+  SimulatorSignals<2>::parse_additional_parameters;
+
+  extern template struct SimulatorSignals<3>;
+  extern template
+  boost::signals2::signal<void (const unsigned int aspect_dim, ParameterHandler &prm)>
+  SimulatorSignals<3>::declare_additional_parameters;
+  extern template
+  boost::signals2::signal<void (const Parameters<3> &, ParameterHandler &)>
+  SimulatorSignals<3>::parse_additional_parameters;
 
 
   namespace internals

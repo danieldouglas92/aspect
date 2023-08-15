@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2020 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2020 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -225,11 +225,6 @@ namespace aspect
            */
           Rheology::Elasticity<dim> elastic_rheology;
 
-          /**
-           * Whether to include viscoelasticity in the constitutive formulation.
-           */
-          bool use_elasticity;
-
 
         private:
 
@@ -287,7 +282,7 @@ namespace aspect
           bool use_adiabatic_pressure_in_creep;
 
           /**
-           * List of exponents controlling the behaviour of the stress limiter
+           * List of exponents controlling the behavior of the stress limiter
            * yielding mechanism.
            */
           std::vector<double> exponents_stress_limiter;

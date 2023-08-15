@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2015 - 2022 by the authors of the ASPECT code.
+ Copyright (C) 2015 - 2023 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -113,7 +113,7 @@ namespace aspect
       std::vector<std::vector<double>>
       composition_values(this->n_compositional_fields(), std::vector<double>(quadrature_formula.size()));
 
-      // Directly do the global 3D integral over each quadrature point of every cell (different from traditional way to do layer integral).
+      // Directly do the global 3d integral over each quadrature point of every cell (different from traditional way to do layer integral).
       // This is necessary because of ASPECT's adaptive mesh refinement feature.
       std::vector<double> SH_density_coecos;
       std::vector<double> SH_density_coesin;
@@ -131,7 +131,7 @@ namespace aspect
                   {
                     fe_values.reinit (cell);
                     // Set use_strain_rates to false since we don't need viscosity.
-                    in.reinit(fe_values, cell, this->introspection(), this->get_solution(), false);
+                    in.reinit(fe_values, cell, this->introspection(), this->get_solution());
 
                     this->get_material_model().evaluate(in, out);
 
@@ -396,7 +396,7 @@ namespace aspect
       AssertThrow (Plugins::plugin_type_matches<const GeometryModel::SphericalShell<dim>>(this->get_geometry_model())
                    &&
                    dim == 3,
-                   ExcMessage("The geoid postprocessor is currently only implemented for the 3D spherical shell geometry model."));
+                   ExcMessage("The geoid postprocessor is currently only implemented for the 3d spherical shell geometry model."));
 
       const GeometryModel::SphericalShell<dim> &geometry_model =
         Plugins::get_plugin_as_type<const GeometryModel::SphericalShell<dim>> (this->get_geometry_model());
@@ -592,7 +592,7 @@ namespace aspect
           // On processor 0, collect all the data and put them into the output density anomaly contribution SH coefficients file.
           if (dealii::Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
             {
-              std::ofstream density_anomaly_contribution_SH_coes_file (density_anomaly_contribution_SH_coes_filename.c_str());
+              std::ofstream density_anomaly_contribution_SH_coes_file (density_anomaly_contribution_SH_coes_filename);
               density_anomaly_contribution_SH_coes_file << "# "
                                                         << "degree order cosine_coefficient sine_coefficient"
                                                         << std::endl;
@@ -636,7 +636,7 @@ namespace aspect
           // and put them into the output surface topography contribution SH coefficients file.
           if (dealii::Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
             {
-              std::ofstream surface_topo_contribution_SH_coes_file (surface_topo_contribution_SH_coes_filename.c_str());
+              std::ofstream surface_topo_contribution_SH_coes_file (surface_topo_contribution_SH_coes_filename);
               surface_topo_contribution_SH_coes_file << "# "
                                                      << "degree order cosine_coefficient sine_coefficient"
                                                      << std::endl;
@@ -683,7 +683,7 @@ namespace aspect
           // to get the data. On processor 0, collect all the data and put them into the output CMB topography contribution SH coefficients file.
           if (dealii::Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
             {
-              std::ofstream CMB_topo_contribution_SH_coes_file (CMB_topo_contribution_SH_coes_filename.c_str());
+              std::ofstream CMB_topo_contribution_SH_coes_file (CMB_topo_contribution_SH_coes_filename);
               CMB_topo_contribution_SH_coes_file << "# "
                                                  << "degree order cosine_coefficient sine_coefficient"
                                                  << std::endl;
@@ -730,7 +730,7 @@ namespace aspect
           // On processor 0, collect all the data and put them into the output geoid anomaly SH coefficients file.
           if (dealii::Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
             {
-              std::ofstream geoid_anomaly_SH_coes_file (geoid_anomaly_SH_coes_filename.c_str());
+              std::ofstream geoid_anomaly_SH_coes_file (geoid_anomaly_SH_coes_filename);
               geoid_anomaly_SH_coes_file << "# "
                                          << "degree order cosine_coefficient sine_coefficient"
                                          << std::endl;
@@ -744,6 +744,14 @@ namespace aspect
       // later sent to processor 0.
       std::ostringstream output;
 
+      // On processor 0, write the header lines
+      if (Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
+        {
+          output << "# "
+                 << ((output_in_lat_lon == true)? "longitude latitude" : "x y z")
+                 << " geoid_anomaly" << std::endl;
+        }
+
       // Prepare the output data.
       if (output_in_lat_lon == true)
         {
@@ -751,12 +759,12 @@ namespace aspect
           for (unsigned int i=0; i<surface_cell_spherical_coordinates.size(); ++i)
             {
               // Transfer the spherical coordinates to geographical coordinates.
-              lat = 90. - surface_cell_spherical_coordinates.at(i).first*(180./numbers::PI);
+              lat = 90. - surface_cell_spherical_coordinates.at(i).first * constants::radians_to_degree;
               lon = (surface_cell_spherical_coordinates.at(i).second <= numbers::PI
                      ?
-                     surface_cell_spherical_coordinates.at(i).second*(180./numbers::PI)
+                     surface_cell_spherical_coordinates.at(i).second * constants::radians_to_degree
                      :
-                     surface_cell_spherical_coordinates.at(i).second*(180./numbers::PI) - 360.);
+                     surface_cell_spherical_coordinates.at(i).second * constants::radians_to_degree - 360.);
 
               // Write the solution to the stream output.
               output << lon
@@ -782,21 +790,8 @@ namespace aspect
       const std::string filename = this->get_output_directory() +
                                    "geoid_anomaly." +
                                    dealii::Utilities::int_to_string(this->get_timestep_number(), 5);
-      const std::vector<std::string> data = Utilities::MPI::gather(this->get_mpi_communicator(), output.str());
 
-      // On processor 0, collect all of the data the individual processors sent
-      // and concatenate them into one file:
-      if (Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
-        {
-          std::ofstream file (filename.c_str());
-
-          file << "# "
-               << ((output_in_lat_lon == true)? "longitude latitude" : "x y z")
-               << " geoid_anomaly" << std::endl;
-
-          for (const auto &str : data)
-            file << str;
-        }
+      Utilities::collect_and_write_file_content(filename, output.str(), this->get_mpi_communicator());
 
       // Prepare the free-air gravity anomaly output.
       if (output_gravity_anomaly == true)
@@ -804,6 +799,14 @@ namespace aspect
           // Have a stream into which we write the gravity anomaly data. the text stream is then
           // later sent to processor 0.
           std::ostringstream output_gravity_anomaly;
+
+          // On processor 0, write the header lines:
+          if (Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
+            {
+              output_gravity_anomaly << "# "
+                                     << ((output_in_lat_lon == true)? "longitude latitude" : "x y z")
+                                     << " gravity_anomaly" << std::endl;
+            }
 
           // Compute the grid gravity anomaly based on spherical harmonics.
           std::vector<double> gravity_anomaly;
@@ -838,12 +841,12 @@ namespace aspect
               for (unsigned int i=0; i<surface_cell_spherical_coordinates.size(); ++i)
                 {
                   // Transfer the spherical coordinates to geographical coordinates.
-                  lat = 90. - surface_cell_spherical_coordinates.at(i).first*(180./numbers::PI);
+                  lat = 90. - surface_cell_spherical_coordinates.at(i).first * constants::radians_to_degree;
                   lon = (surface_cell_spherical_coordinates.at(i).second <= numbers::PI
                          ?
-                         surface_cell_spherical_coordinates.at(i).second*(180./numbers::PI)
+                         surface_cell_spherical_coordinates.at(i).second * constants::radians_to_degree
                          :
-                         surface_cell_spherical_coordinates.at(i).second*(180./numbers::PI) - 360.);
+                         surface_cell_spherical_coordinates.at(i).second * constants::radians_to_degree - 360.);
 
                   // Write the solution to the stream output.
                   output_gravity_anomaly << lon
@@ -869,21 +872,8 @@ namespace aspect
           const std::string filename = this->get_output_directory() +
                                        "gravity_anomaly." +
                                        dealii::Utilities::int_to_string(this->get_timestep_number(), 5);
-          const std::vector<std::string> data = Utilities::MPI::gather(this->get_mpi_communicator(), output_gravity_anomaly.str());
 
-          // On processor 0, collect all of the data the individual processors sent
-          // and concatenate them into one file:
-          if (Utilities::MPI::this_mpi_process(this->get_mpi_communicator()) == 0)
-            {
-              std::ofstream file (filename.c_str());
-
-              file << "# "
-                   << ((output_in_lat_lon == true)? "longitude latitude" : "x y z")
-                   << " gravity_anomaly" << std::endl;
-
-              for (const auto &str : data)
-                file << str;
-            }
+          Utilities::collect_and_write_file_content(filename, output_gravity_anomaly.str(), this->get_mpi_communicator());
         }
 
       return std::pair<std::string,std::string>("Writing geoid anomaly:",
@@ -1075,6 +1065,6 @@ namespace aspect
                                   "and based on the real surface from the geometry model in case "
                                   "of a free surface. The geoid is computed "
                                   "from a spherical harmonic expansion, so the geometry "
-                                  "of the domain must be a 3D spherical shell.")
+                                  "of the domain must be a 3d spherical shell.")
   }
 }

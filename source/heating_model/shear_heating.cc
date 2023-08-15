@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2021 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -97,7 +97,7 @@ namespace aspect
     ShearHeatingOutputs<dim>::get_nth_output(const unsigned int idx) const
     {
       (void) idx;
-      AssertIndexRange (idx, 0);
+      AssertIndexRange (idx, 1);
 
       return shear_heating_work_fractions;
     }

@@ -56,6 +56,7 @@ benchmarks/viscosity_grooves/doc/viscosity_grooves.md
 benchmarks/davies_et_al/doc/davies_et_al.md
 benchmarks/crameri_et_al/doc/crameri_et_al.md
 benchmarks/solitary_wave/doc/solitary_wave.md
+benchmarks/solubility/doc/solubility.md
 benchmarks/operator_splitting/doc/operator_splitting.md
 benchmarks/tosi_et_al_2015_gcubed/doc/tosi_et_al_2015_gcubed.md
 benchmarks/layeredflow/doc/layeredflow.md
@@ -67,4 +68,14 @@ benchmarks/gravity_thick_shell/doc/gravity_thick_shell.md
 benchmarks/infill_density/doc/infill_density.md
 benchmarks/gravity_mantle/doc/gravity_mantle.md
 benchmarks/buiter_et_al_2016_jsg/doc/buiter_et_al_2016_jsg.md
+benchmarks/compressibility_formulations/README.md
+benchmarks/entropy_adiabat/README.md
+benchmarks/geoid-spectral-comparison/README.md
+benchmarks/newton_solver_benchmark_set/nonlinear_channel_flow/README.md
+benchmarks/newton_solver_benchmark_set/spiegelman_et_al_2016/README.md
+benchmarks/newton_solver_benchmark_set/tosi_et_al_2015/README.md
+benchmarks/nsinker/README.md
+benchmarks/nsinker_spherical_shell/README.md
+benchmarks/time_dependent_annulus/README.md
+benchmarks/viscoelastic_plastic_shear_bands/README.md
 :::

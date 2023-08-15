@@ -1,4 +1,4 @@
-# Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
+# Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 #
 # This file is part of ASPECT.
 #
@@ -23,19 +23,20 @@ IF (CMP0058)
  cmake_policy(CMP0058 NEW)
 ENDIF()
 
+PROJECT(testsuite CXX)
+
 SET(ASPECT_BINARY "${ASPECT_BINARY}" CACHE STRING "" FORCE)
 SET(Aspect_DIR "${Aspect_DIR}" CACHE STRING "" FORCE)
 SET(ASPECT_COMPARE_TEST_RESULTS "${ASPECT_COMPARE_TEST_RESULTS}" CACHE BOOL "" FORCE)
 SET(ASPECT_RUN_ALL_TESTS OFF CACHE BOOL "")
 
-FIND_PACKAGE(Aspect 2.4.0 QUIET HINTS ${Aspect_DIR})
+FIND_PACKAGE(Aspect 2.4.0 QUIET REQUIRED HINTS ${Aspect_DIR})
 DEAL_II_INITIALIZE_CACHED_VARIABLES()
 
 FIND_PACKAGE(Perl)
 
 MESSAGE(STATUS "Setting up tests with CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE}")
 
-PROJECT(testsuite CXX)
 
 ENABLE_TESTING()
 
@@ -97,20 +98,21 @@ ENDFUNCTION()
 
 # Analyze the .prm to decide if this test should be run or not. We are
 # checking for the following strings in the .prm:
-# 1. "WORLD BUILDER" - only run with World Builder.
-# 2. "QUICK_TEST" - enable the test even if RUN_ALL_TESTS is false
+# 1. "Enable if: ASPECT_WITH_WORLD_BUILDER" - only run with World Builder.
+# 2. "Enable if: QUICK_TEST" - enable the test even if RUN_ALL_TESTS is false
 FUNCTION(SHOULD_ENABLE_TEST _filename)
 
   FILE(STRINGS ${_filename} _input_lines
-  REGEX "WORLD BUILDER")
+       REGEX "Enable if: ASPECT_WITH_WORLD_BUILDER")
   IF(NOT "${_input_lines}" STREQUAL "")
-    IF (${_input_lines} MATCHES "WORLD BUILDER" AND NOT ASPECT_WITH_WORLD_BUILDER)
+    IF (${_input_lines} MATCHES "Enable if: ASPECT_WITH_WORLD_BUILDER"
+        AND NOT ASPECT_WITH_WORLD_BUILDER)
       SET(_use_test OFF PARENT_SCOPE)
     ENDIF()
   ENDIF()
 
   FILE(STRINGS ${_filename} _input_lines
-       REGEX "QUICK_TEST")
+       REGEX "Enable if: QUICK_TEST")
   IF(NOT ASPECT_RUN_ALL_TESTS AND "${_input_lines}" STREQUAL "")
     SET(_use_test OFF PARENT_SCOPE)
   ENDIF()

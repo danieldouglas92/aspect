@@ -234,7 +234,7 @@
  * (Juliane Dannberg, 2022/01/28)
  *
  * <li> Fixed: The compressible terms for the DC Stokes and Newton solvers
- * where not correctly assembled. This is fixed now, and tests comparing
+ * were not correctly assembled. This is fixed now, and tests comparing
  * the Stokes and DC Stokes solver have been added.
  * <br>
  * (Menno Fraters, 2022/01/26)
@@ -245,7 +245,7 @@
  * Stokes equations. This generally caused the linear solver to fail or to
  * take many more iterations than necessary. The right-hand side pressure
  * compatibility modification is now applied correctly, fixing this problem
- * and allowing it to use periodic boudaries in compressible models.
+ * and allowing it to use periodic boundaries in compressible models.
  * <br>
  * (Juliane Dannberg, 2022/01/26)
  *
@@ -525,7 +525,7 @@
  *
  * <li> New: Added a cutoff stress to Rheology::PeierlsCreep.
  *
- * In parameterisations of the Peierls creep flow law where the
+ * In parameterizations of the Peierls creep flow law where the
  * power law stress exponent is equal to zero, the strain rate
  * does not approach zero as the stress drops to zero. This is
  * a problem, because the iterative solve for the equilibrium

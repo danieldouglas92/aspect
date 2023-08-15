@@ -23,9 +23,9 @@ The following postprocessors are available:
 
 &lsquo;boundary pressures&rsquo;: A postprocessor that computes the laterally averaged pressure at the top and bottom of the domain.
 
-&lsquo;boundary strain rate residual statistics&rsquo;: A postprocessor that computes some statistics about the surface strain rate residual along the top boundary. The residual is the difference between the second invariant of the model strain rate and the second strain rate invariant read from the input data file. Currently, the strain residual statistics, i.e., min, max and the rms magnitude, are computed at the top suface.
+&lsquo;boundary strain rate residual statistics&rsquo;: A postprocessor that computes some statistics about the surface strain rate residual along the top boundary. The residual is the difference between the second invariant of the model strain rate and the second strain rate invariant read from the input data file. Currently, the strain residual statistics, i.e., min, max and the rms magnitude, are computed at the top surface.
 
-&lsquo;boundary velocity residual statistics&rsquo;: A postprocessor that computes some statistics about the velocity residual along the top boundary. The velocity residual is the difference between the model solution velocities and the input velocities (GPlates model or ascii data). Currently, the velocity residual statistics, i.e., min, max and the rms magnitude, is computed at the top suface.
+&lsquo;boundary velocity residual statistics&rsquo;: A postprocessor that computes some statistics about the velocity residual along the top boundary. The velocity residual is the difference between the model solution velocities and the input velocities (GPlates model or ascii data). Currently, the velocity residual statistics, i.e., min, max and the rms magnitude, is computed at the top surface.
 
 &lsquo;command&rsquo;: A postprocessor that executes a command line process.
 
@@ -39,7 +39,7 @@ The following postprocessors are available:
 
 In the output files, the $x$-value of each data point corresponds to the depth, whereas the $y$-value corresponds to the simulation time. The time is provided in seconds or, if the global &ldquo;Use years in output instead of seconds&rdquo; parameter is set, in years.
 
-&lsquo;domain volume statistics&rsquo;: A postprocessor that computes the total area (in 2d) or volume (in 3D) of the computational domain.
+&lsquo;domain volume statistics&rsquo;: A postprocessor that computes the total area (in 2d) or volume (in 3d) of the computational domain.
 
 &lsquo;dynamic topography&rsquo;: A postprocessor that computes a measure of dynamic topography based on the stress at the surface and bottom. The data is written into text files named &lsquo;dynamic\_topography.NNNNN&rsquo; in the output directory, where NNNNN is the number of the time step.
 
@@ -50,7 +50,7 @@ The file format then consists of lines with Euclidean coordinates followed by th
 
 &lsquo;entropy viscosity statistics&rsquo;: A postprocessor that computes the maximum and volume averagedentropy viscosity stabilization for the temperature field.
 
-&lsquo;geoid&rsquo;: A postprocessor that computes a representation of the geoid based on the density structure in the mantle, as well as the topography at the surface and core mantle boundary (CMB) if desired. The topography is based on the dynamic topography postprocessor in case of no free surface, and based on the real surface from the geometry model in case of a free surface. The geoid is computed from a spherical harmonic expansion, so the geometry of the domain must be a 3D spherical shell.
+&lsquo;geoid&rsquo;: A postprocessor that computes a representation of the geoid based on the density structure in the mantle, as well as the topography at the surface and core mantle boundary (CMB) if desired. The topography is based on the dynamic topography postprocessor in case of no free surface, and based on the real surface from the geometry model in case of a free surface. The geoid is computed from a spherical harmonic expansion, so the geometry of the domain must be a 3d spherical shell.
 
 &lsquo;global statistics&rsquo;: A postprocessor that outputs all the global statistics information, e.g. the time of the simulation, the timestep number, number of degrees of freedom and solver iterations for each timestep. The postprocessor can output different formats, the first printing one line in the statistics file per nonlinear solver iteration (if a nonlinear solver scheme is selected). The second prints one line per timestep, summing the information about all nonlinear iterations in this line. Note that this postprocessor is always active independent on whether or not it is selected in the parameter file.
 
@@ -72,7 +72,7 @@ The &ldquo;heat flux densities&rdquo; postprocessor computes the same quantity a
 
 &lsquo;heating statistics&rsquo;: A postprocessor that computes some statistics about heating, averaged by volume.
 
-&lsquo;load balance statistics&rsquo;: A postprocessor that computes statistics about the distribution of cells, and if present particles across subdomains. In particular, it computes maximal, average and minimal number of cells across all ranks. If there are particles it also computes the maximal, average, and minimum number of particles across all ranks, and maximal, average, and minimal ratio between local number of particles and local number of cells across all processes. All of these numbers can be useful to assess the load balance between different MPI ranks, as the difference between the mimimal and maximal load should be as small as possible.
+&lsquo;load balance statistics&rsquo;: A postprocessor that computes statistics about the distribution of cells, and if present particles across subdomains. In particular, it computes maximal, average and minimal number of cells across all ranks. If there are particles it also computes the maximal, average, and minimum number of particles across all ranks, and maximal, average, and minimal ratio between local number of particles and local number of cells across all processes. All of these numbers can be useful to assess the load balance between different MPI ranks, as the difference between the minimal and maximal load should be as small as possible.
 
 &lsquo;mass flux statistics&rsquo;: A postprocessor that computes some statistics about the mass flux across boundaries. For each boundary indicator (see your geometry description for which boundary indicators are used), the mass flux is computed in outward direction, i.e., from the domain to the outside, using the formula $\int_{\Gamma_i} \rho \mathbf v \cdot \mathbf n$ where $\Gamma_i$ is the part of the boundary with indicator $i$, $\rho$ is the density as reported by the material model, $\mathbf v$ is the velocity, and $\mathbf n$ is the outward normal.
 
@@ -104,7 +104,7 @@ In the output file, data is organized as (i) time, (ii) the 2 or 3 coordinates o
 
 &lsquo;pressure statistics&rsquo;: A postprocessor that computes some statistics about the pressure field.
 
-&lsquo;rotation statistics&rsquo;: A postprocessor that computes some statistics about the rotational velocity of the model (i.e. integrated net rotation and angular momentum). In 2D we assume the model to be a cross-section through an infinite domain in z direction, with a zero z-velocity. Thus, the z-axis is the only possible rotation axis and both moment of inertia and angular momentum are scalar instead of tensor quantities.
+&lsquo;rotation statistics&rsquo;: A postprocessor that computes some statistics about the rotational velocity of the model (i.e. integrated net rotation and angular momentum). In 2d we assume the model to be a cross-section through an infinite domain in z direction, with a zero z-velocity. Thus, the z-axis is the only possible rotation axis and both moment of inertia and angular momentum are scalar instead of tensor quantities.
 
 &lsquo;spherical velocity statistics&rsquo;: A postprocessor that computes radial, tangential and total RMS velocity.
 
@@ -115,7 +115,7 @@ The file format then consists of lines with Euclidean coordinates followed by th
 
 &lsquo;velocity boundary statistics&rsquo;: A postprocessor that computes some statistics about the velocity along the boundaries. For each boundary indicator (see your geometry description for which boundary indicators are used), the min and max velocity magnitude is computed.
 
-&lsquo;velocity statistics&rsquo;: A postprocessor that computes some statistics about the velocity field.
+&lsquo;velocity statistics&rsquo;: A postprocessor that computes the root mean square and maximum velocity in the computational domain.
 
 &lsquo;viscous dissipation statistics&rsquo;: A postprocessor that outputs the viscous rate of dissipation of energy for each compositional field (where the field has a value of 0.5 or more) as well as over the whole domain. When all the fields represent lithologies and there is no background field, the sum of the individual field&rsquo;s dissipation should equal that over the whole domain. The viscous dissipation is computed as: $\int_{V}\left(\sigma&rsquo; \dot{\epsilon}&rsquo; \right)$, where $\sigma&rsquo;$  is the deviatoric stress and $\dot{\epsilon}&rsquo;$ the deviatoric strain rate.Note then when shear heating is included in the temperature equation, it is better to use the &rsquo;heating statistics&rsquo; postprocessor.
 
@@ -197,7 +197,7 @@ The file format then consists of lines with Euclidean coordinates followed by th
 
 **Pattern:** [Bool]
 
-**Documentation:** Specify velocity as r, phi, and theta components instead of x, y, and z. Positive velocities point up, east, and north (in 3D) or out and clockwise (in 2D). This setting only makes sense for spherical geometries.GPlates data is always interpreted to be in east and north directions and is not affected by this parameter.
+**Documentation:** Specify velocity as r, phi, and theta components instead of x, y, and z. Positive velocities point up, east, and north (in 3d) or out and clockwise (in 2d). This setting only makes sense for spherical geometries.GPlates data is always interpreted to be in east and north directions and is not affected by this parameter.
 
 (parameters:Postprocess/Command)=
 ## **Subsection:** Postprocess / Command
@@ -690,7 +690,7 @@ Select one of the following models:
 
 **Documentation:** Select one of the following models:
 
-&lsquo;bilinear least squares&rsquo;: Uses linear least squares to obtain the slopes and center of a 2D or 3D plane from the particle positions and a particular property value on those particles. Interpolate this property onto a vector of points. If the limiter is enabled then it will ensure the interpolated properties do not exceed the range of the minimum and maximum of the values of the property on the particles. Note that deal.II must be configured with BLAS and LAPACK to support this operation.
+&lsquo;bilinear least squares&rsquo;: Uses linear least squares to obtain the slopes and center of a 2d or 3d plane from the particle positions and a particular property value on those particles. Interpolate this property onto a vector of points. If the limiter is enabled then it will ensure the interpolated properties do not exceed the range of the minimum and maximum of the values of the property on the particles. Note that deal.II must be configured with BLAS and LAPACK to support this operation.
 
 &lsquo;cell average&rsquo;: Return the arithmetic average of all particle properties in the given cell, or in the neighboring cells if the given cell is empty. In case the neighboring cells are also empty, and &rsquo;Allow cells without particles&rsquo; is set to true, the interpolator returns 0. Otherwise, an exception is thrown.
 
@@ -704,7 +704,7 @@ Select one of the following models:
 ### __Parameter name:__ List of particle properties
 **Default value:**
 
-**Pattern:** [MultipleSelection composition|crystal preferred orientation|elastic stress|function|initial composition|initial position|integrated strain|integrated strain invariant|melt particle|pT path|position|reference position|strain rate|velocity|viscoplastic strain invariants ]
+**Pattern:** [MultipleSelection composition|cpo bingham average|crystal preferred orientation|elastic stress|function|grain size|initial composition|initial position|integrated strain|integrated strain invariant|melt particle|pT path|position|reference position|strain rate|velocity|viscoplastic strain invariants ]
 
 **Documentation:** A comma separated list of particle properties that should be tracked. By default none is selected, which means only position, velocity and id of the particles are output.
 
@@ -712,11 +712,15 @@ The following properties are available:
 
 &lsquo;composition&rsquo;: Implementation of a plugin in which the particle property is defined by the compositional fields in the model. This can be used to track solid compositionevolution over time.
 
+&lsquo;cpo bingham average&rsquo;: This is a particle property plugin which computes the Bingham average for the Crystal Preferred Orientation particle property plugin so that it can be visualized.
+
 &lsquo;crystal preferred orientation&rsquo;: The plugin manages and computes the evolution of Lattice/Crystal Preferred Orientations (LPO/CPO) on particles. Each ASPECT particle can be assigned many grains. Each grain is assigned a size and a orientation matrix. This allows for CPO evolution tracking with polycrystalline kinematic CrystalPreferredOrientation evolution models such as D-Rex (Kaminski and Ribe, 2001; Kaminski et al., 2004).
 
 &lsquo;elastic stress&rsquo;: A plugin in which the particle property tensor is defined as the total elastic stress a particle has accumulated. See the viscoelastic material model documentation for more detailed information.
 
-&lsquo;function&rsquo;: Implementation of a model in which the particle property is set by evaluating an explicit function at the initial position of each particle. The function is defined in the parameters in section &ldquo;Particles|Function&rdquo;. The format of these functions follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}.
+&lsquo;function&rsquo;: Implementation of a model in which the particle property is set by evaluating an explicit function at the initial position of each particle. The function is defined in the parameters in section &ldquo;Particles|Function&rdquo;. The format of these functions follows the syntax understood by the muparser library, see {ref}`sec:run-aspect:parameters-overview:muparser-format`.
+
+&lsquo;grain size&rsquo;: A plugin in which the particle property is defined as the evolving grain size of a particle. See the grain_size material model documentation for more detailed information.
 
 &lsquo;initial composition&rsquo;: Implementation of a plugin in which the particle property is given as the initial composition at the particle&rsquo;s initial position. The particle gets as many properties as there are compositional fields.
 
@@ -790,7 +794,7 @@ The following properties are available:
 
 &lsquo;ascii file&rsquo;: Generates a distribution of particles from coordinates specified in an Ascii data file. The file format is a simple text file, with as many columns as spatial dimensions and as many lines as particles to be generated. Initial comment lines starting with &lsquo;#&rsquo; will be discarded. Note that this plugin always generates as many particles as there are coordinates in the data file, the &ldquo;Postprocess/Particles/Number of particles&rdquo; parameter has no effect on this plugin. All of the values that define this generator are read from a section &ldquo;Postprocess/Particles/Generator/Ascii file&rdquo; in the input file, see Section~\ref{parameters:Postprocess/Particles/Generator/Ascii_20file}.
 
-&lsquo;probability density function&rsquo;: Generate a random distribution of particles over the entire simulation domain. The probability density is prescribed in the form of a user-prescribed function. The format of this function follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}. The return value of the function is always checked to be a non-negative probability density but it can be zero in parts of the domain.
+&lsquo;probability density function&rsquo;: Generate a random distribution of particles over the entire simulation domain. The probability density is prescribed in the form of a user-prescribed function. The format of this function follows the syntax understood by the muparser library, see {ref}`sec:run-aspect:parameters-overview:muparser-format`. The return value of the function is always checked to be a non-negative probability density but it can be zero in parts of the domain.
 
 &lsquo;quadrature points&rsquo;: Generates particles at the quadrature points of each active cell of the triangulation. Here, Gauss quadrature of degree (velocity\_degree + 1), is used similarly to the assembly of Stokes matrix.
 
@@ -798,9 +802,9 @@ The following properties are available:
 
 &lsquo;reference cell&rsquo;: Generates a uniform distribution of particles per cell and spatial direction in the unit cell and transforms each of the particles back to real region in the model domain. Uniform here means the particles will be generated with an equal spacing in each spatial dimension.
 
-&lsquo;uniform box&rsquo;: Generate a uniform distribution of particles over a rectangular domain in 2D or 3D. Uniform here means the particles will be generated with an equal spacing in each spatial dimension. Note that in order to produce a regular distribution the number of generated particles might not exactly match the one specified in the input file.
+&lsquo;uniform box&rsquo;: Generate a uniform distribution of particles over a rectangular domain in 2d or 3d. Uniform here means the particles will be generated with an equal spacing in each spatial dimension. Note that in order to produce a regular distribution the number of generated particles might not exactly match the one specified in the input file.
 
-&lsquo;uniform radial&rsquo;: Generate a uniform distribution of particles over a spherical domain in 2D or 3D. Uniform here means the particles will be generated with an equal spacing in each spherical spatial dimension, i.e., the particles are created at positions that increase linearly with equal spacing in radius, colatitude and longitude around a certain center point. Note that in order to produce a regular distribution the number of generated particles might not exactly match the one specified in the input file.
+&lsquo;uniform radial&rsquo;: Generate a uniform distribution of particles over a spherical domain in 2d or 3d. Uniform here means the particles will be generated with an equal spacing in each spherical spatial dimension, i.e., the particles are created at positions that increase linearly with equal spacing in radius, colatitude and longitude around a certain center point. Note that in order to produce a regular distribution the number of generated particles might not exactly match the one specified in the input file.
 
 (parameters:Postprocess/Particles/Particle_20weight)=
 ### __Parameter name:__ Particle weight
@@ -843,6 +847,24 @@ Units: years if the &rsquo;Use years in output instead of seconds&rsquo; paramet
 **Pattern:** [Bool]
 
 **Documentation:** File operations can potentially take a long time, blocking the progress of the rest of the model run. Setting this variable to &lsquo;true&rsquo; moves this process into a background thread, while the rest of the model continues.
+
+(parameters:Postprocess/Particles/CPO_20Bingham_20Average)=
+## **Subsection:** Postprocess / Particles / CPO Bingham Average
+(parameters:Postprocess/Particles/CPO_20Bingham_20Average/Number_20of_20samples)=
+### __Parameter name:__ Number of samples
+**Default value:** 0
+
+**Pattern:** [Double 0...MAX_DOUBLE (inclusive)]
+
+**Documentation:** This determines how many samples are taken when using the random draw volume averaging. Setting it to zero means that the number of samples is set to be equal to the number of grains.
+
+(parameters:Postprocess/Particles/CPO_20Bingham_20Average/Random_20number_20seed)=
+### __Parameter name:__ Random number seed
+**Default value:** 1
+
+**Pattern:** [Integer range 0...2147483647 (inclusive)]
+
+**Documentation:** The seed used to generate random numbers. This will make sure that results are reproducible as long as the problem is run with the same amount of MPI processes. It is implemented as final seed = Random number seed + MPI Rank.
 
 (parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation)=
 ## **Subsection:** Postprocess / Particles / Crystal Preferred Orientation
@@ -904,14 +926,6 @@ Units: years if the &rsquo;Use years in output instead of seconds&rsquo; paramet
 
 **Documentation:** This is exponent p as defined in equation 11 of Kaminski et al., 2004.
 
-(parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation/D_2dRex_202004/Minerals)=
-### __Parameter name:__ Minerals
-**Default value:** Olivine: Karato 2008, Enstatite
-
-**Pattern:** [List of <[Anything]> of length 0...4294967295 (inclusive)]
-
-**Documentation:** This determines what minerals and fabrics or fabric selectors are used used for the LPO calculation. The options are Olivine: A-fabric, Olivine: B-fabric, Olivine: C-fabric, Olivine: D-fabric, Olivine: E-fabric, Olivine: Karato 2008 or Enstatite. The Karato 2008 selector selects a fabric based on stress and water content as defined in figure 4 of the Karato 2008 review paper (doi: 10.1146/annurev.earth.36.031207.124120).
-
 (parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation/D_2dRex_202004/Mobility)=
 ### __Parameter name:__ Mobility
 **Default value:** 50
@@ -954,6 +968,14 @@ Units: years if the &rsquo;Use years in output instead of seconds&rsquo; paramet
 
 (parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation/Initial_20grains)=
 ## **Subsection:** Postprocess / Particles / Crystal Preferred Orientation / Initial grains
+(parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation/Initial_20grains/Minerals)=
+### __Parameter name:__ Minerals
+**Default value:** Olivine: Karato 2008, Enstatite
+
+**Pattern:** [List of <[Anything]> of length 0...4294967295 (inclusive)]
+
+**Documentation:** This determines what minerals and fabrics or fabric selectors are used used for the LPO/CPO calculation. The options are Olivine: Passive, A-fabric, Olivine: B-fabric, Olivine: C-fabric, Olivine: D-fabric, Olivine: E-fabric, Olivine: Karato 2008 or Enstatite. Passive sets all RRSS entries to the maximum. The Karato 2008 selector selects a fabric based on stress and water content as defined in figure 4 of the Karato 2008 review paper (doi: 10.1146/annurev.earth.36.031207.124120).
+
 (parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation/Initial_20grains/Model_20name)=
 ### __Parameter name:__ Model name
 **Default value:** Uniform grains and random uniform rotations
@@ -962,17 +984,7 @@ Units: years if the &rsquo;Use years in output instead of seconds&rsquo; paramet
 
 **Documentation:** The model used to initialize the CPO for all particles. Currently &rsquo;Uniform grains and random uniform rotations&rsquo; is the only valid option.
 
-(parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation/Initial_20grains/Uniform_20grains_20and_20random_20uniform_20rotations)=
-## **Subsection:** Postprocess / Particles / Crystal Preferred Orientation / Initial grains / Uniform grains and random uniform rotations
-(parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation/Initial_20grains/Uniform_20grains_20and_20random_20uniform_20rotations/Minerals)=
-### __Parameter name:__ Minerals
-**Default value:** Olivine: Karato 2008, Enstatite
-
-**Pattern:** [List of <[Anything]> of length 0...4294967295 (inclusive)]
-
-**Documentation:** This determines what minerals and fabrics or fabric selectors are used used for the LPO/CPO calculation. The options are Olivine: Passive, A-fabric, Olivine: B-fabric, Olivine: C-fabric, Olivine: D-fabric, Olivine: E-fabric, Olivine: Karato 2008 or Enstatite. Passive sets all RRSS entries to the maximum. The Karato 2008 selector selects a fabric based on stress and water content as defined in figure 4 of the Karato 2008 review paper (doi: 10.1146/annurev.earth.36.031207.124120).
-
-(parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation/Initial_20grains/Uniform_20grains_20and_20random_20uniform_20rotations/Volume_20fractions_20minerals)=
+(parameters:Postprocess/Particles/Crystal_20Preferred_20Orientation/Initial_20grains/Volume_20fractions_20minerals)=
 ### __Parameter name:__ Volume fractions minerals
 **Default value:** 0.7, 0.3
 
@@ -1320,7 +1332,7 @@ If the function you are describing represents a vector-valued function with mult
 
 **Pattern:** [Bool]
 
-**Documentation:** Whether to write the full moment of inertia tensor into the statistics output instead of its norm for the current rotation axis. This is a second-order symmetric tensor with 6 components in 3D. In 2D this option has no effect, because the rotation axis is fixed and thus the moment of inertia is always a scalar.
+**Documentation:** Whether to write the full moment of inertia tensor into the statistics output instead of its norm for the current rotation axis. This is a second-order symmetric tensor with 6 components in 3d. In 2d this option has no effect, because the rotation axis is fixed and thus the moment of inertia is always a scalar.
 
 (parameters:Postprocess/Rotation_20statistics/Use_20constant_20density_20of_20one)=
 ### __Parameter name:__ Use constant density of one
@@ -1528,7 +1540,7 @@ Physical units: \si{\pascal}.
 
 Physical units: None.
 
-&lsquo;spherical velocity components&rsquo;: A visualization output object that outputs the polar coordinates components $v_r$ and $v_\phi$ of the velocity field in 2D and the spherical coordinates components $v_r$, $v_{\phi}$ and $v_{\theta}$ of the velocity field in 3D.
+&lsquo;spherical velocity components&rsquo;: A visualization output object that outputs the polar coordinates components $v_r$ and $v_\phi$ of the velocity field in 2d and the spherical coordinates components $v_r$, $v_{\phi}$ and $v_{\theta}$ of the velocity field in 3d.
 
 Physical units: $\frac{\text{m}}{\text{s}}$ or $\frac{\text{m}}{\text{year}}$, depending on settings in the input file.
 
@@ -1586,7 +1598,7 @@ Physical units: \si{\per\second}.
 ### __Parameter name:__ Output format
 **Default value:** vtu
 
-**Pattern:** [Selection none|dx|ucd|gnuplot|povray|eps|gmv|tecplot|tecplot_binary|vtk|vtu|hdf5|svg|deal.II intermediate ]
+**Pattern:** [Selection none|dx|ucd|gnuplot|povray|eps|gmv|tecplot|tecplot_binary|vtk|vtu|hdf5|svg|deal.II intermediate|parallel deal.II intermediate ]
 
 **Documentation:** The file format to be used for graphical output. The list of possible output formats that can be given here is documented in the appendix of the manual where the current parameter is described.
 

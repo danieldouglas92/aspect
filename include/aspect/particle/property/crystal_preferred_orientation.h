@@ -1,5 +1,5 @@
 /*
- Copyright (C) 2022 by the authors of the ASPECT code.
+ Copyright (C) 2022 - 2023 by the authors of the ASPECT code.
 
  This file is part of ASPECT.
 
@@ -52,7 +52,7 @@ namespace aspect
       /**
        * @brief The type of deformation selector used by the CPO code.
        *
-       * The selector is a input parameter and it can either set a deformation type directly or deterimine the deformation type through an algorithm.
+       * The selector is a input parameter and it can either set a deformation type directly or determine the deformation type through an algorithm.
        * The deformation type selector is used to determine/select the deformation type. It can be a fixed deformation type, for example,
        * by setting it to olivine_a_fabric, or it can be dynamically chosen, which is what the olivine_karato_2008 option does.
        *
@@ -128,7 +128,6 @@ namespace aspect
            * Initialization function. This function is called once at the
            * beginning of the program after parse_parameters is run.
            */
-          virtual
           void
           initialize () override;
 
@@ -143,7 +142,6 @@ namespace aspect
            * of this function should be to extend this vector by a number of
            * properties.
            */
-          virtual
           void
           initialize_one_particle_property (const Point<dim> &position,
                                             std::vector<double> &particle_properties) const override;
@@ -169,7 +167,6 @@ namespace aspect
            * @param [in,out] particle_properties The properties of the particle
            * that is updated within the call of this function.
            */
-          virtual
           void
           update_one_particle_property (const unsigned int data_position,
                                         const Point<dim> &position,
@@ -194,7 +191,6 @@ namespace aspect
            * Return which data has to be provided to update the property.
            * The integrated strains needs the gradients of the velocity.
            */
-          virtual
           UpdateFlags
           get_needed_update_flags () const override;
 
@@ -205,7 +201,6 @@ namespace aspect
            * @return A vector that contains pairs of the property names and the
            * number of components this property plugin defines.
            */
-          virtual
           std::vector<std::pair<std::string, unsigned int>>
           get_property_information() const override;
 
@@ -322,7 +317,7 @@ namespace aspect
           /**
            * @brief Computes the reference resolved shear stress (RRSS) based on the selected deformation type.
            *
-           * The inactive plane should theoretically be infinitly strong, but this is nummerically not desirable,
+           * The inactive plane should theoretically be infinitely strong, but this is nummerically not desirable,
            * so an optional max_value can be set to indicate an inactive plane.
            *
            * It is currently designed to return the relative strength of the slip planes for olivine, which are are 4,
@@ -406,7 +401,7 @@ namespace aspect
            */
           inline
           double get_volume_fractions_grains(const unsigned int cpo_data_position,
-                                             const ArrayView<double> &data,
+                                             const ArrayView<const double> &data,
                                              const unsigned int mineral_i,
                                              const unsigned int grain_i) const
           {
@@ -443,7 +438,7 @@ namespace aspect
            */
           inline
           Tensor<2,3> get_rotation_matrix_grains(const unsigned int cpo_data_position,
-                                                 const ArrayView<double> &data,
+                                                 const ArrayView<const double> &data,
                                                  const unsigned int mineral_i,
                                                  const unsigned int grain_i) const
           {
@@ -542,7 +537,7 @@ namespace aspect
           compute_derivatives_spin_tensor(const Tensor<2,3> &velocity_gradient_tensor) const;
 
           /**
-           * Random number generator used for initalization of particles
+           * Random number generator used for initialization of particles
            */
           mutable boost::mt19937 random_number_generator;
           unsigned int random_number_seed;
@@ -590,11 +585,6 @@ namespace aspect
            * Backward Euler and Crank-Nicolson iterations.
            */
           unsigned int property_advection_max_iterations;
-
-          /**
-           * The tensor representation of the permutation symbol.
-           */
-          Tensor<3,3> permutation_operator_3d;
 
           /**
            * @name D-Rex variables

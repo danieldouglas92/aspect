@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -262,7 +262,7 @@ namespace aspect
       std::list<std::string>
       Interface<dim>::required_other_postprocessors () const
       {
-        return std::list<std::string>();
+        return {};
       }
 
 
@@ -377,8 +377,8 @@ namespace aspect
                                                this->get_time());
       const std::string pvtu_master_filename = (solution_file_prefix +
                                                 ".pvtu");
-      std::ofstream pvtu_master ((this->get_output_directory() + "solution/" +
-                                  pvtu_master_filename).c_str());
+      std::ofstream pvtu_master (this->get_output_directory() + "solution/" +
+                                 pvtu_master_filename);
       data_out.write_pvtu_record (pvtu_master, filenames);
 
       // now also generate a .pvd file that matches simulation
@@ -398,7 +398,7 @@ namespace aspect
 
       const std::string pvd_master_filename = (this->get_output_directory() +
                                                (is_cell_data_output ? "solution.pvd" : "solution_surface.pvd"));
-      std::ofstream pvd_master (pvd_master_filename.c_str());
+      std::ofstream pvd_master (pvd_master_filename);
 
       DataOutBase::write_pvd_record (pvd_master, output_history.times_and_pvtu_names);
 
@@ -408,7 +408,7 @@ namespace aspect
                                                  + "solution/"
                                                  + solution_file_prefix
                                                  + ".visit");
-      std::ofstream visit_master (visit_master_filename.c_str());
+      std::ofstream visit_master (visit_master_filename);
 
       DataOutBase::write_visit_record (visit_master, filenames);
 
@@ -435,8 +435,8 @@ namespace aspect
           output_history.output_file_names_by_timestep.push_back (filenames_with_path);
       }
 
-      std::ofstream global_visit_master ((this->get_output_directory() +
-                                          (is_cell_data_output ? "solution.visit" : "solution_surface.visit")).c_str());
+      std::ofstream global_visit_master (this->get_output_directory() +
+                                         (is_cell_data_output ? "solution.visit" : "solution_surface.visit"));
 
       std::vector<std::pair<double, std::vector<std::string>>> times_and_output_file_names;
       for (unsigned int timestep=0; timestep<output_history.times_and_pvtu_names.size(); ++timestep)
@@ -545,13 +545,9 @@ namespace aspect
           vtk_flags.cycle = this->get_timestep_number();
           vtk_flags.time = time_in_years_or_seconds;
 
-#if DEAL_II_VERSION_GTE(9,4,0)
           // Also describe the physical units if we have them. Postprocessors do
           // describe them, but it's a slight hassle to get at the information:
           vtk_flags.physical_units = visualization_field_names_and_units;
-#else
-          (void)visualization_field_names_and_units;
-#endif
 
           // Finally, set or do not set whether we want to describe cells
           // with curved edges and faces:
@@ -597,7 +593,7 @@ namespace aspect
             // Just write one data file in parallel
             if (group_files == 1)
               {
-                data_out.write_vtu_in_parallel(filename.c_str(),
+                data_out.write_vtu_in_parallel(filename,
                                                this->get_mpi_communicator());
               }
             else               // Write as many output files as 'group_files' groups
@@ -606,22 +602,24 @@ namespace aspect
                 MPI_Comm comm;
                 int ierr = MPI_Comm_split(this->get_mpi_communicator(), color, my_id, &comm);
                 AssertThrowMPI(ierr);
-                data_out.write_vtu_in_parallel(filename.c_str(), comm);
+                data_out.write_vtu_in_parallel(filename, comm);
                 ierr = MPI_Comm_free(&comm);
                 AssertThrowMPI(ierr);
               }
         }
-#if DEAL_II_VERSION_GTE(9,5,0)
       else if (output_format == "parallel deal.II intermediate")
         {
+#if DEAL_II_VERSION_GTE(9,5,0)
           const std::string filename = this->get_output_directory() + "solution/"
                                        + solution_file_prefix + ".pd2";
 
           data_out.write_deal_II_intermediate_in_parallel(filename,
                                                           this->get_mpi_communicator(),
                                                           DataOutBase::CompressionLevel::default_compression);
-        }
+#else
+          AssertThrow(false, ExcMessage("Parallel deal.II intermediate output requires deal.II 9.5 or newer!"));
 #endif
+        }
       else   // Write in a different format than hdf5 or vtu. This case is supported, but is not
         // optimized for parallel output in that every process will write one file directly
         // into the output directory. This may or may not affect performance depending on
@@ -633,7 +631,7 @@ namespace aspect
                                        + solution_file_prefix + "." + Utilities::int_to_string(myid, 4)
                                        + DataOutBase::default_suffix(
                                          DataOutBase::parse_output_format(output_format));
-          std::ofstream out(filename.c_str());
+          std::ofstream out(filename);
           AssertThrow(out,
                       ExcMessage(
                         "Unable to open file for writing: " + filename + "."));
@@ -756,7 +754,7 @@ namespace aspect
       if ((this->get_time() < last_output_time + output_interval)
           && (this->get_timestep_number() < last_output_timestep + maximum_timesteps_between_outputs)
           && (this->get_timestep_number() != 0))
-        return std::pair<std::string,std::string>();
+        return {"", ""};
 
       // up the counter of the number of the file by one, but not in
       // the very first output step. if we run postprocessors on all
@@ -1066,7 +1064,7 @@ namespace aspect
             close(tmp_file_desc);
         }
 
-      std::ofstream out(tmp_filename.c_str());
+      std::ofstream out(tmp_filename);
 
       AssertThrow (out, ExcMessage(std::string("Trying to write to file <") +
                                    filename +
@@ -1124,7 +1122,8 @@ namespace aspect
 
           // now also see about the file format we're supposed to write in
           prm.declare_entry ("Output format", "vtu",
-                             Patterns::Selection (DataOutBase::get_output_format_names ()),
+                             Patterns::Selection (DataOutBase::get_output_format_names ()
+                                                  + "|parallel deal.II intermediate"),
                              "The file format to be used for graphical output. The list "
                              "of possible output formats that can be given here is documented "
                              "in the appendix of the manual where the current parameter "

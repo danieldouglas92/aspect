@@ -126,7 +126,7 @@ If the list of indicators given in this parameter is empty, then this indicates 
 ### __Parameter name:__ Strategy
 **Default value:** thermal energy density
 
-**Pattern:** [MultipleSelection artificial viscosity|boundary|compaction length|composition|composition approximate gradient|composition gradient|composition threshold|density|isosurfaces|maximum refinement function|minimum refinement function|nonadiabatic temperature|particle density|slope|strain rate|temperature|thermal energy density|topography|velocity|viscosity|volume of fluid interface ]
+**Pattern:** [MultipleSelection artificial viscosity|boundary|compaction length|composition|composition approximate gradient|composition gradient|composition threshold|density|isosurfaces|maximum refinement function|minimum refinement function|nonadiabatic temperature|nonadiabatic temperature threshold|particle density|slope|strain rate|temperature|thermal energy density|topography|velocity|viscosity|volume of fluid interface ]
 
 **Documentation:** A comma separated list of mesh refinement criteria that will be run whenever mesh refinement is required. The results of each of these criteria, i.e., the refinement indicators they produce for all the cells of the mesh will then be normalized to a range between zero and one and the results of different criteria will then be merged through the operation selected in this section.
 
@@ -172,13 +172,15 @@ The minimum and maximum refinement levels per isosurface can be provided in abso
 
 &lsquo;maximum refinement function&rsquo;: A mesh refinement criterion that ensures a maximum refinement level described by an explicit formula with the depth or position as argument. Which coordinate representation is used is determined by an input parameter. Whatever the coordinate system chosen, the function you provide in the input file will by default depend on variables &lsquo;x&rsquo;, &lsquo;y&rsquo; and &lsquo;z&rsquo; (if in 3d). However, the meaning of these symbols depends on the coordinate system. In the Cartesian coordinate system, they simply refer to their natural meaning. If you have selected &lsquo;depth&rsquo; for the coordinate system, then &lsquo;x&rsquo; refers to the depth variable and &lsquo;y&rsquo; and &lsquo;z&rsquo; will simply always be zero. If you have selected a spherical coordinate system, then &lsquo;x&rsquo; will refer to the radial distance of the point to the origin, &lsquo;y&rsquo; to the azimuth angle and &lsquo;z&rsquo; to the polar angle measured positive from the north pole. Note that the order of spherical coordinates is r,phi,theta and not r,theta,phi, since this allows for dimension independent expressions. Each coordinate system also includes a final &lsquo;t&rsquo; variable which represents the model time, evaluated in years if the &rsquo;Use years in output instead of seconds&rsquo; parameter is set, otherwise evaluated in seconds. After evaluating the function, its values are rounded to the nearest integer.
 
-The format of these functions follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}.
+The format of these functions follows the syntax understood by the muparser library, see {ref}`sec:run-aspect:parameters-overview:muparser-format`.
 
 &lsquo;minimum refinement function&rsquo;: A mesh refinement criterion that ensures a minimum refinement level described by an explicit formula with the depth or position as argument. Which coordinate representation is used is determined by an input parameter. Whatever the coordinate system chosen, the function you provide in the input file will by default depend on variables &lsquo;x&rsquo;, &lsquo;y&rsquo; and &lsquo;z&rsquo; (if in 3d). However, the meaning of these symbols depends on the coordinate system. In the Cartesian coordinate system, they simply refer to their natural meaning. If you have selected &lsquo;depth&rsquo; for the coordinate system, then &lsquo;x&rsquo; refers to the depth variable and &lsquo;y&rsquo; and &lsquo;z&rsquo; will simply always be zero. If you have selected a spherical coordinate system, then &lsquo;x&rsquo; will refer to the radial distance of the point to the origin, &lsquo;y&rsquo; to the azimuth angle and &lsquo;z&rsquo; to the polar angle measured positive from the north pole. Note that the order of spherical coordinates is r,phi,theta and not r,theta,phi, since this allows for dimension independent expressions. Each coordinate system also includes a final &lsquo;t&rsquo; variable which represents the model time, evaluated in years if the &rsquo;Use years in output instead of seconds&rsquo; parameter is set, otherwise evaluated in seconds. After evaluating the function, its values are rounded to the nearest integer.
 
-The format of these functions follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}.
+The format of these functions follows the syntax understood by the muparser library, see {ref}`sec:run-aspect:parameters-overview:muparser-format`.
 
 &lsquo;nonadiabatic temperature&rsquo;: A mesh refinement criterion that computes refinement indicators from the excess temperature(difference between temperature and adiabatic temperature.
+
+&lsquo;nonadiabatic temperature threshold&rsquo;: A mesh refinement criterion that computes refinement indicators from the temperature difference between the actual temperature and the adiabatic conditions (the nonadiabatic temperature). If the temperature anomaly exceeds the threshold given in the input file, the cell is marked for refinement.
 
 &lsquo;particle density&rsquo;: A mesh refinement criterion that computes refinement indicators based on the density of particles. In practice this plugin equilibrates the number of particles per cell, leading to fine cells in high particle density regions and coarse cells in low particle density regions. This plugin is mostly useful for models with inhomogeneous particle density, e.g. when tracking an initial interface with a high particle density, or when the spatial particle density denotes the region of interest. Additionally, this plugin tends to balance the computational load between processes in parallel computations, because the particle and mesh density is more aligned.
 
@@ -316,7 +318,7 @@ If the list of scaling factors given in this parameter is empty, then this indic
 
 **Documentation:** A list of isosurfaces separated by semi-colons (;). Each isosurface entry consists of multiple entries separated by a comma. The first two entries indicate the minimum and maximum refinement levels respectively. The entries after the first two describe the fields the isosurface applies to, followed by a colon (:), which is again followed by the minimum and maximum property values separated by bar (|). An example for an isosurface is &rsquo;0, 2, Temperature: 300 | 600; 2, 2, C\_1: 0.5 | 1&rsquo;. In this example the mesh refinement is kept between level 0 and level 2 if the temperature is between 300 and 600 and at level 2 when the compositional field C\_1 is between 0.5 and 1. If both happen at the same location and the current refinement level is 1, it means that the first isoline will not set any flag and the second isoline will set a refinement flag. This means the cell will be refined. If both the coarsening and refinement flags are set, preference is given to refinement.
 
-The first two entries for each isosurface, describing the minimum and maximum grid levels, can be two numbers or contain one of the key values &rsquo;min&rsquo; and &rsquo;max&rsquo;. This indicates the key will be replaced with the global minimum and maximum refinement levels. The &rsquo;min&rsquo; and &rsquo;max&rsquo; keys also accept adding values to be added or substracted from them respectively. This is done by adding a &rsquo;+&rsquo; or &rsquo;-&rsquo; and a number behind them (e.g. min+2 or max-1). Note that you can&rsquo;t substract a value from a minimum value or add a value to the maximum value. If, for example, &lsquo;max-4&lsquo; drops below the minimum or &lsquo;min+4&lsquo; goes above the maximum, it will simply use the global minimum and maximum values respectively. The same holds for any mesh refinement level below the global minimum or above the global maximum.
+The first two entries for each isosurface, describing the minimum and maximum grid levels, can be two numbers or contain one of the key values &rsquo;min&rsquo; and &rsquo;max&rsquo;. This indicates the key will be replaced with the global minimum and maximum refinement levels. The &rsquo;min&rsquo; and &rsquo;max&rsquo; keys also accept adding values to be added or subtracted from them respectively. This is done by adding a &rsquo;+&rsquo; or &rsquo;-&rsquo; and a number behind them (e.g. min+2 or max-1). Note that you can&rsquo;t subtract a value from a minimum value or add a value to the maximum value. If, for example, &lsquo;max-4&lsquo; drops below the minimum or &lsquo;min+4&lsquo; goes above the maximum, it will simply use the global minimum and maximum values respectively. The same holds for any mesh refinement level below the global minimum or above the global maximum.
 
 (parameters:Mesh_20refinement/Maximum_20refinement_20function)=
 ## **Subsection:** Mesh refinement / Maximum refinement function
@@ -326,7 +328,7 @@ The first two entries for each isosurface, describing the minimum and maximum gr
 
 **Pattern:** [Selection depth|cartesian|spherical ]
 
-**Documentation:** A selection that determines the assumed coordinate system for the function variables. Allowed values are &lsquo;depth&rsquo;, &lsquo;cartesian&rsquo; and &lsquo;spherical&rsquo;. &lsquo;depth&rsquo; will create a function, in which only the first variable is non-zero, which is interpreted to be the depth of the point. &lsquo;spherical&rsquo; coordinates are interpreted as r,phi or r,phi,theta in 2D/3D respectively with theta being the polar angle.
+**Documentation:** A selection that determines the assumed coordinate system for the function variables. Allowed values are &lsquo;depth&rsquo;, &lsquo;cartesian&rsquo; and &lsquo;spherical&rsquo;. &lsquo;depth&rsquo; will create a function, in which only the first variable is non-zero, which is interpreted to be the depth of the point. &lsquo;spherical&rsquo; coordinates are interpreted as r,phi or r,phi,theta in 2d/3d respectively with theta being the polar angle.
 
 (parameters:Mesh_20refinement/Maximum_20refinement_20function/Function_20constants)=
 ### __Parameter name:__ Function constants
@@ -364,7 +366,7 @@ If the function you are describing represents a vector-valued function with mult
 
 **Pattern:** [Selection depth|cartesian|spherical ]
 
-**Documentation:** A selection that determines the assumed coordinate system for the function variables. Allowed values are &lsquo;depth&rsquo;, &lsquo;cartesian&rsquo; and &lsquo;spherical&rsquo;. &lsquo;depth&rsquo; will create a function, in which only the first variable is non-zero, which is interpreted to be the depth of the point. &lsquo;spherical&rsquo; coordinates are interpreted as r,phi or r,phi,theta in 2D/3D respectively with theta being the polar angle.
+**Documentation:** A selection that determines the assumed coordinate system for the function variables. Allowed values are &lsquo;depth&rsquo;, &lsquo;cartesian&rsquo; and &lsquo;spherical&rsquo;. &lsquo;depth&rsquo; will create a function, in which only the first variable is non-zero, which is interpreted to be the depth of the point. &lsquo;spherical&rsquo; coordinates are interpreted as r,phi or r,phi,theta in 2d/3d respectively with theta being the polar angle.
 
 (parameters:Mesh_20refinement/Minimum_20refinement_20function/Function_20constants)=
 ### __Parameter name:__ Function constants
@@ -393,6 +395,24 @@ If the function you are describing represents a vector-valued function with mult
 **Pattern:** [Anything]
 
 **Documentation:** The names of the variables as they will be used in the function, separated by commas. By default, the names of variables at which the function will be evaluated are &lsquo;x&rsquo; (in 1d), &lsquo;x,y&rsquo; (in 2d) or &lsquo;x,y,z&rsquo; (in 3d) for spatial coordinates and &lsquo;t&rsquo; for time. You can then use these variable names in your function expression and they will be replaced by the values of these variables at which the function is currently evaluated. However, you can also choose a different set of names for the independent variables at which to evaluate your function expression. For example, if you work in spherical coordinates, you may wish to set this input parameter to &lsquo;r,phi,theta,t&rsquo; and then use these variable names in your function expression.
+
+(parameters:Mesh_20refinement/Nonadiabatic_20temperature_20threshold)=
+## **Subsection:** Mesh refinement / Nonadiabatic temperature threshold
+(parameters:Mesh_20refinement/Nonadiabatic_20temperature_20threshold/Temperature_20anomaly_20type)=
+### __Parameter name:__ Temperature anomaly type
+**Default value:** absolute value
+
+**Pattern:** [Selection negative only|positive only|absolute value ]
+
+**Documentation:** What type of temperature anomaly should be considered when evaluating against the threshold: Only negative anomalies (negative only), only positive anomalies (positive only) or the absolute value of the nonadiabatic temperature.
+
+(parameters:Mesh_20refinement/Nonadiabatic_20temperature_20threshold/Threshold)=
+### __Parameter name:__ Threshold
+**Default value:** 100
+
+**Pattern:** [Double 0...MAX_DOUBLE (inclusive)]
+
+**Documentation:** A threshold that the nonadiabatic temperature will be evaluated against. Units: \si{\kelvin}
 
 (parameters:Mesh_20refinement/Volume_20of_20fluid_20interface)=
 ## **Subsection:** Mesh refinement / Volume of fluid interface

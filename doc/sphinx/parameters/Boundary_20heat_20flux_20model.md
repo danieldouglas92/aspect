@@ -25,7 +25,7 @@ This parameter only describes which boundaries have a fixed heat flux, but not w
 
 **Documentation:** Select one of the following plugins:
 
-&lsquo;function&rsquo;: Implementation of a model in which the boundary heat flux is given in terms of an explicit formula that is elaborated in the parameters in section &ldquo;Boundary heat flux model|Function&rdquo;. The format of these functions follows the syntax understood by the muparser library, see Section~\ref{sec:muparser-format}.
+&lsquo;function&rsquo;: Implementation of a model in which the boundary heat flux is given in terms of an explicit formula that is elaborated in the parameters in section &ldquo;Boundary heat flux model|Function&rdquo;. The format of these functions follows the syntax understood by the muparser library, see {ref}`sec:run-aspect:parameters-overview:muparser-format`.
 
 The formula you describe in the mentioned section is a scalar value for the heat flux that is assumed to be the flux normal to the boundary, and that has the unit W/(m$^2$) (in 3d) or W/m (in 2d). Negative fluxes are interpreted as the flow of heat into the domain, and positive fluxes are interpreted as heat flowing out of the domain.
 
@@ -39,7 +39,7 @@ The symbol $t$ indicating time that may appear in the formulas for the prescribe
 
 **Pattern:** [Selection cartesian|spherical|depth ]
 
-**Documentation:** A selection that determines the assumed coordinate system for the function variables. Allowed values are &lsquo;cartesian&rsquo;, &lsquo;spherical&rsquo;, and &lsquo;depth&rsquo;. &lsquo;spherical&rsquo; coordinates are interpreted as r,phi or r,phi,theta in 2D/3D respectively with theta being the polar angle. &lsquo;depth&rsquo; will create a function, in which only the first parameter is non-zero, which is interpreted to be the depth of the point.
+**Documentation:** A selection that determines the assumed coordinate system for the function variables. Allowed values are &lsquo;cartesian&rsquo;, &lsquo;spherical&rsquo;, and &lsquo;depth&rsquo;. &lsquo;spherical&rsquo; coordinates are interpreted as r,phi or r,phi,theta in 2d/3d respectively with theta being the polar angle. &lsquo;depth&rsquo; will create a function, in which only the first parameter is non-zero, which is interpreted to be the depth of the point.
 
 (parameters:Boundary_20heat_20flux_20model/Function/Function_20constants)=
 ### __Parameter name:__ Function constants

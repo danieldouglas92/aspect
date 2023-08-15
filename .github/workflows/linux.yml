@@ -1,6 +1,11 @@
 name: linux
 
-on: pull_request
+on:
+  push:
+    branches:
+      - 'main'
+      - 'aspect-*'
+  pull_request:
 
 concurrency:
   group: ${{ github.actor }}-${{ github.ref }}
@@ -21,34 +26,34 @@ jobs:
     runs-on: [ubuntu-20.04]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: setup
       run: |
         sudo apt-get update
         sudo apt-get install -y software-properties-common
-        sudo add-apt-repository ppa:ginggs/deal.ii-9.3.2-backports
+        sudo add-apt-repository ppa:ginggs/deal.ii-9.4.0-backports
         sudo apt-get update
         sudo apt-get install -yq --no-install-recommends libdeal.ii-dev
     - name: compile
       run: |
         mkdir build-no-unity
         cd build-no-unity
-        cmake -D ASPECT_PRECOMPILE_HEADERS=OFF -D ASPECT_UNITY_BUILD=OFF -D CMAKE_CXX_FLAGS='-Werror' ..
+        cmake -D CMAKE_BUILD_TYPE=Debug -D ASPECT_PRECOMPILE_HEADERS=OFF -D ASPECT_UNITY_BUILD=OFF -D CMAKE_CXX_FLAGS='-Werror' ..
         make -j 2
         ./aspect --test
 
   linux:
-    #linux build including indent and documentation
+    #linux build including indent, examples and documentation
     name: indent+documentation
     runs-on: [ubuntu-20.04]
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: setup
       run: |
         sudo apt-get update
         sudo apt-get install -y software-properties-common
-        sudo add-apt-repository ppa:ginggs/deal.ii-9.3.2-backports
+        sudo add-apt-repository ppa:ginggs/deal.ii-9.4.0-backports
         sudo apt-get update
         sudo apt-get install -yq --no-install-recommends texlive-plain-generic texlive-base texlive-latex-recommended texlive-latex-base texlive-fonts-recommended texlive-bibtex-extra lmodern texlive-latex-extra texlive-science graphviz python3-pip python-setuptools libdeal.ii-dev doxygen latexmk biber inkscape
         doxygen --version
@@ -76,11 +81,14 @@ jobs:
       run: |
         cd doc
         latexmk -pdf -f citations-list.tex
+        grep WARN citations-list.blg && echo "warnings found!" && exit 1
+        echo "OK"
     - name: compile
       run: |
         mkdir build
         cd build
-        cmake -D ASPECT_PRECOMPILE_HEADERS=ON -D ASPECT_UNITY_BUILD=ON -D CMAKE_CXX_FLAGS='-Werror' ..
+        cmake -D CMAKE_BUILD_TYPE=Debug -D ASPECT_PRECOMPILE_HEADERS=ON -D ASPECT_UNITY_BUILD=ON \
+        -D CMAKE_CXX_FLAGS='-Werror' -D ASPECT_INSTALL_EXAMPLES=ON ..
         make -j 2
         ./aspect --test
     - name: doc
@@ -88,12 +96,6 @@ jobs:
         cd doc
         export OMPI_MCA_btl="self,vader"
         ./update_parameters.sh $GITHUB_WORKSPACE/build/aspect
-        make manual.pdf
-    - name: archive
-      uses: actions/upload-artifact@v1
-      with:
-        name: manual.log
-        path: doc/manual/manual.log
 
   tests:
     #linux build including tests
@@ -103,14 +105,9 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - image: "geodynamics/aspect-tester:focal-dealii-9.3-v2"
+          - image: "geodynamics/aspect-tester:focal-dealii-9.4-v3"
             run-tests: "ON"
             compare-tests: "ON"
-            result-file: "changes-test-results-9.3.diff"
-            container-options: '--name container'
-          - image: "geodynamics/aspect-tester:focal-dealii-9.4-v2"
-            run-tests: "ON"
-            compare-tests: "OFF"
             result-file: "changes-test-results-9.4.diff"
             container-options: '--name container'
           - image: "geodynamics/aspect-tester:focal-dealii-master"
@@ -124,12 +121,13 @@ jobs:
       options: ${{ matrix.container-options }}
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
     - name: compile
       run: |
         mkdir build
         cd build
         cmake \
+        -D CMAKE_BUILD_TYPE=Debug \
         -G 'Ninja' \
         -D CMAKE_CXX_FLAGS='-Werror' \
         -D ASPECT_ADDITIONAL_CXX_FLAGS='-O3' \

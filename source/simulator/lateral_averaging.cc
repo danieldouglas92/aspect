@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -21,6 +21,7 @@
 #include <aspect/lateral_averaging.h>
 #include <aspect/material_model/interface.h>
 #include <aspect/gravity_model/interface.h>
+#include <aspect/adiabatic_conditions/interface.h>
 #include <aspect/geometry_model/box.h>
 #include <aspect/geometry_model/chunk.h>
 #include <aspect/geometry_model/ellipsoidal_chunk.h>
@@ -63,6 +64,55 @@ namespace aspect
 
 
     template <int dim>
+    class FunctorDepthAverageAdiabat: public internal::FunctorBase<dim>
+    {
+      public:
+        enum Property
+        {
+          temperature,
+          pressure,
+          density,
+          density_derivative
+        } property;
+
+
+
+        FunctorDepthAverageAdiabat(const Property &property,
+                                   const AdiabaticConditions::Interface<dim> &adiabat)
+          : property(property),
+            adiabat(adiabat)
+        {}
+
+
+
+        void operator()(const MaterialModel::MaterialModelInputs<dim> &,
+                        const MaterialModel::MaterialModelOutputs<dim> &,
+                        const FEValues<dim> &fe_values,
+                        const LinearAlgebra::BlockVector &,
+                        std::vector<double> &output) override
+        {
+          const unsigned int n_quadrature_points = output.size();
+          for (unsigned int i=0; i<n_quadrature_points; ++i)
+            {
+              if (property == Property::temperature)
+                output[i] = adiabat.temperature(fe_values.quadrature_point(i));
+              else if (property == Property::pressure)
+                output[i] = adiabat.pressure(fe_values.quadrature_point(i));
+              else if (property == Property::density)
+                output[i] = adiabat.density(fe_values.quadrature_point(i));
+              else if (property == Property::density_derivative)
+                output[i] = adiabat.density_derivative(fe_values.quadrature_point(i));
+              else
+                AssertThrow(false, ExcNotImplemented());
+            }
+        }
+
+        const AdiabaticConditions::Interface<dim> &adiabat;
+    };
+
+
+
+    template <int dim>
     class FunctorDepthAverageViscosity: public internal::FunctorBase<dim>
     {
       public:
@@ -98,7 +148,7 @@ namespace aspect
                         const LinearAlgebra::BlockVector &,
                         std::vector<double> &output) override
         {
-          for (unsigned i = 0; i < out.viscosities.size(); i++)
+          for (unsigned i = 0; i < out.viscosities.size(); ++i)
             output[i] = std::log10 (out.viscosities[i]);
         }
     };
@@ -867,6 +917,30 @@ namespace aspect
 
             functors.push_back(std::make_unique<FunctorDepthAverageFieldMass<dim>> (
                                  this->introspection().extractors.compositional_fields[c]));
+          }
+        else if (property_name == "adiabatic_temperature")
+          {
+            functors.push_back(std::make_unique<FunctorDepthAverageAdiabat<dim>>
+                               (FunctorDepthAverageAdiabat<dim>::temperature,
+                                this->get_adiabatic_conditions()));
+          }
+        else if (property_name == "adiabatic_pressure")
+          {
+            functors.push_back(std::make_unique<FunctorDepthAverageAdiabat<dim>>
+                               (FunctorDepthAverageAdiabat<dim>::pressure,
+                                this->get_adiabatic_conditions()));
+          }
+        else if (property_name == "adiabatic_density")
+          {
+            functors.push_back(std::make_unique<FunctorDepthAverageAdiabat<dim>>
+                               (FunctorDepthAverageAdiabat<dim>::density,
+                                this->get_adiabatic_conditions()));
+          }
+        else if (property_name == "adiabatic_density_derivative")
+          {
+            functors.push_back(std::make_unique<FunctorDepthAverageAdiabat<dim>>
+                               (FunctorDepthAverageAdiabat<dim>::density_derivative,
+                                this->get_adiabatic_conditions()));
           }
         else
           {

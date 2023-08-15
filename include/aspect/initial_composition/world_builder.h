@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2021 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -57,7 +57,6 @@ namespace aspect
          * beginning of the program after parse_parameters is run and after
          * the SimulatorAccess (if applicable) is initialized.
          */
-        virtual
         void
         initialize () override;
 

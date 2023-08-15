@@ -1,5 +1,5 @@
 /*
-  Copyright (C) 2011 - 2022 by the authors of the ASPECT code.
+  Copyright (C) 2011 - 2023 by the authors of the ASPECT code.
 
   This file is part of ASPECT.
 
@@ -379,8 +379,8 @@ namespace aspect
     };
 
     /**
-    Use the struct aspect::CompositionalFieldDescription
-    */
+     * Use the struct aspect::CompositionalFieldDescription
+     */
     using CompositionalFieldDescription DEAL_II_DEPRECATED = aspect::CompositionalFieldDescription;
 
     /**
@@ -675,6 +675,8 @@ namespace aspect
     unsigned int                   n_compositional_fields;
     std::vector<std::string>       names_of_compositional_fields;
     std::vector<aspect::CompositionalFieldDescription>  composition_descriptions;
+    unsigned int                   n_chemical_compositions;
+    std::vector<unsigned int>      chemical_composition_indices;
 
     /**
      * A vector that contains the advection field method for every compositional
