@@ -19,7 +19,7 @@
 */
 
 
-#include <aspect/initial_temperature/plate_cooling.h>
+#include <aspect/initial_temperature/half_space_cooling.h>
 #include <aspect/geometry_model/interface.h>
 #include <aspect/utilities.h>
 #include <deal.II/base/signaling_nan.h>
@@ -29,14 +29,14 @@ namespace aspect
   namespace InitialTemperature
   {
     template <int dim>
-    PlateCooling<dim>::PlateCooling ()
+    HalfSpaceCooling<dim>::HalfSpaceCooling ()
       :
       surface_boundary_id(numbers::invalid_unsigned_int)
     {}
 
     template <int dim>
     void
-    PlateCooling<dim>::initialize ()
+    HalfSpaceCooling<dim>::initialize ()
     {
       // Find the boundary indicator that represents the surface
       surface_boundary_id = this->get_geometry_model().translate_symbolic_boundary_name_to_id("top");
@@ -50,64 +50,25 @@ namespace aspect
 
     template <int dim>
     double
-    PlateCooling<dim>::initial_temperature (const Point<dim> &position) const
+    HalfSpaceCooling<dim>::initial_temperature (const Point<dim> &position) const
     {
       const double depth = this->get_geometry_model().depth(position);
       const double seafloor_age = Utilities::AsciiDataBoundary<dim>::get_data_component(surface_boundary_id, position, 0);
-      if (depth < lithosphere_thickness)
-        {
-	  double sum_terms = 0;
-
-          if (plate_model == "Parsons & Sclater")
-            {
-              for (unsigned int n=1; n<11; ++n)
-	        {
-	          sum_terms += 1/n * std::exp(-kappa * std::pow(n, 2) * std::pow(numbers::PI, 2) * seafloor_age / std::pow(lithosphere_thickness, 2)) * \
-	         	       std::sin(n * numbers::PI * depth / lithosphere_thickness);
-	        }
-
-	      const double  T_lithosphere = T_surface + (T_mantle - T_surface) * (depth / lithosphere_thickness + 2 / numbers::PI * sum_terms);
-	      return T_lithosphere;
-
-            }
-
-          if (plate_model == "Stein & Stein")
-            {
-              for (unsigned int n=1; n<11; ++n)
-                {
-                  sum_terms += 1/n * std::exp(-plate_velocity * seafloor_age / lithosphere_thickness * (\
-                                     std::sqrt(std::pow(plate_velocity, 2) * std::pow(lithosphere_thickness, 2) / (4 * std::pow(kappa, 2)) + std::pow(n, 2) * std::pow(numbers::PI, 2)) - \
-                                     plate_velocity * lithosphere_thickness / (2 * kappa))) * \
-                                     std::sin(n * numbers::PI * depth / lithosphere_thickness);
-                }
-              const double T_lithosphere = T_surface + (T_mantle - T_surface) * (depth / lithosphere_thickness + 2 / numbers::PI * sum_terms);
-              return T_lithosphere;
-            }
-
-          else
-            {
-              AssertThrow(plate_model == "Stein & Stein" || plate_model == "Parsons & Scalter",
-                          ExcMessage("Only Stein & Stein and Parsons & Sclater are valid plate model names"));
-            }
-        }
- 
-      else
-        {
-          return T_mantle;
-        }
+      const double T_lithosphere = T_surface + (T_mantle - T_surface) * std::erf(depth / (2 * std::sqrt(kappa * seafloor_age)));
+      return T_lithosphere;
     }
 
     template <int dim>
     void
-    PlateCooling<dim>::declare_parameters(ParameterHandler &prm)
+    HalfSpaceCooling<dim>::declare_parameters(ParameterHandler &prm)
     {
       prm.enter_subsection ("Initial temperature model");
       {
         Utilities::AsciiDataBase<dim>::declare_parameters(prm,
                                                           "$ASPECT_SOURCE_DIR/data/initial-temperature/adiabatic-boundary/",
                                                           "adiabatic_boundary.txt",
-                                                          "Plate cooling");
-        prm.enter_subsection("Plate cooling");
+                                                          "Half space cooling");
+        prm.enter_subsection("Half space cooling");
         {
           prm.declare_entry ("Mantle temperature", "1673",
                              Patterns::Double (0.),
@@ -121,12 +82,6 @@ namespace aspect
 	  prm.declare_entry ("Thermal diffusivity", "0.8e-6",
 			     Patterns::Double (0.),
 			     "The thermal diffusivity.");
-          prm.declare_entry ("Plate cooling model", "Parsons & Sclater",
-                             Patterns::Anything(),
-                             "The plate cooling model, either Parsons & Sclater or Stein & Stein");
-          prm.declare_entry ("Plate velocity", "5e-2",
-                             Patterns::Double (0.),
-                             "The half spreading rate of the plate used to calculate the geotherm.");
         }
         prm.leave_subsection();
       }
@@ -135,20 +90,18 @@ namespace aspect
 
     template <int dim>
     void
-    PlateCooling<dim>::parse_parameters(ParameterHandler &prm)
+    HalfSpaceCooling<dim>::parse_parameters(ParameterHandler &prm)
     {
       prm.enter_subsection ("Initial temperature model");
       {
-        Utilities::AsciiDataBase<dim>::parse_parameters(prm,"Plate cooling");
+        Utilities::AsciiDataBase<dim>::parse_parameters(prm,"Half space cooling");
 
-        prm.enter_subsection("Plate cooling");
+        prm.enter_subsection("Half space cooling");
         {
           T_mantle = prm.get_double("Mantle temperature");
           T_surface  = prm.get_double("Surface temperature");
 	  lithosphere_thickness = prm.get_double("Lithosphere thickness");
 	  kappa = prm.get_double("Thermal diffusivity");
-          plate_velocity = prm.get_double("Plate velocity");
-          plate_model = prm.get("Plate cooling model");
         }
         prm.leave_subsection();
       }
@@ -161,8 +114,8 @@ namespace aspect
 {
   namespace InitialTemperature
   {
-    ASPECT_REGISTER_INITIAL_TEMPERATURE_MODEL(PlateCooling,
-                                              "plate cooling",
+    ASPECT_REGISTER_INITIAL_TEMPERATURE_MODEL(HalfSpaceCooling,
+                                              "half space cooling",
                                               "An initial temperature condition that allows for discretizing "
                                               "the model domain into two layers separated by a user-defined "
                                               "isothermal boundary. The user includes an input ascii data file "
