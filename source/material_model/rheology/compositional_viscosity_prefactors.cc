@@ -25,7 +25,6 @@
 #include <aspect/geometry_model/interface.h>
 #include <aspect/adiabatic_conditions/interface.h>
 
-
 #include <deal.II/base/signaling_nan.h>
 #include <deal.II/base/parameter_handler.h>
 #include <aspect/simulator_signals.h>
@@ -78,7 +77,9 @@ namespace aspect
                             " 'Adiabatic conditions model'."));
 
               const unsigned int bound_fluid_idx = this->introspection().compositional_index_for_name("bound_fluid");
-              const double mass_fraction_H2O = std::max(minimum_mass_fraction_water_for_dry_creep[composition_index], in.composition[q][bound_fluid_idx]); // mass fraction of bound water
+              double mass_fraction_H2O = minimum_mass_fraction_water_for_dry_creep[composition_index];
+              if (use_the_bound_fluid_for_water_fugacity)
+                mass_fraction_H2O = std::max(minimum_mass_fraction_water_for_dry_creep[composition_index], in.composition[q][bound_fluid_idx]); // mass fraction of bound water
               const double mass_fraction_olivine = 1 - mass_fraction_H2O; // mass fraction of olivine
               const double COH = (mass_fraction_H2O/molar_mass_H2O) / (mass_fraction_olivine/molar_mass_olivine) * 1e6; // COH in H / Si ppm
               const double point_water_fugacity = COH / A_H2O *
@@ -101,6 +102,10 @@ namespace aspect
       void
       CompositionalViscosityPrefactors<dim>::declare_parameters (ParameterHandler &prm)
       {
+        prm.declare_entry ("Query bound fluid for water fugacity", "true",
+                           Patterns::Bool(),
+                           "true of false");
+
         prm.declare_entry ("Minimum mass fraction bound water content for fugacity", "6.15e-6",
                            Patterns::List(Patterns::Double(0)),
                            "The minimum water content for the HK04 olivine hydration viscosity "
@@ -171,6 +176,7 @@ namespace aspect
                                                    options);
             minimum_mass_fraction_water_for_dry_creep = Utilities::MapParsing::parse_map_to_double_array (prm.get("Minimum mass fraction bound water content for fugacity"),
                                                         options);
+            use_the_bound_fluid_for_water_fugacity = prm.get_bool("Query bound fluid for water fugacity");
           }
       }
     }
