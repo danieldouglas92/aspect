@@ -755,6 +755,22 @@ namespace aspect
   }
 
 
+  template <int dim>
+  void Simulator<dim>::solve_single_advection_no_stokes_v2 ()
+  {
+    assemble_and_solve_temperature();
+    assemble_and_solve_composition();
+
+    if (parameters.run_postprocessors_on_nonlinear_iterations)
+      postprocess ();
+
+    // Setup a nonlinear solver control that only allows a single iteration
+    SolverControl nonlinear_solver_control(1,1.0);
+    // Announce that we did a single iteration, and assume we have converged
+    nonlinear_solver_control.check(1,0.0);
+    signals.post_nonlinear_solver(nonlinear_solver_control);
+  }
+
 
   template <int dim>
   void Simulator<dim>::solve_no_advection_iterated_stokes ()
@@ -1365,6 +1381,7 @@ namespace aspect
   template void Simulator<dim>::solve_iterated_advection_and_newton_stokes(bool); \
   template void Simulator<dim>::solve_single_advection_and_iterated_newton_stokes(bool); \
   template void Simulator<dim>::solve_single_advection_no_stokes(); \
+  template void Simulator<dim>::solve_single_advection_no_stokes_v2(); \
   template void Simulator<dim>::solve_first_timestep_only_single_stokes(); \
   template void Simulator<dim>::solve_no_advection_no_stokes();
 

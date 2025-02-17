@@ -49,6 +49,7 @@ namespace aspect
             case Parameters<dim>::NonlinearSolver::Kind::iterated_Advection_and_defect_correction_Stokes:
             case Parameters<dim>::NonlinearSolver::Kind::iterated_Advection_and_Newton_Stokes:
             case Parameters<dim>::NonlinearSolver::Kind::no_Advection_no_Stokes:
+            case Parameters<dim>::NonlinearSolver::Kind::single_Advection_no_Stokes_v2:
             case Parameters<dim>::NonlinearSolver::Kind::no_Advection_iterated_defect_correction_Stokes:
             case Parameters<dim>::NonlinearSolver::Kind::no_Advection_iterated_Stokes:
             case Parameters<dim>::NonlinearSolver::Kind::no_Advection_single_Stokes:

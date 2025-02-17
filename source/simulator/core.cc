@@ -848,6 +848,7 @@ namespace aspect
           case Parameters<dim>::NonlinearSolver::Kind::iterated_Advection_and_Newton_Stokes:
           case Parameters<dim>::NonlinearSolver::Kind::single_Advection_iterated_Newton_Stokes:
           case Parameters<dim>::NonlinearSolver::Kind::single_Advection_no_Stokes:
+          case Parameters<dim>::NonlinearSolver::Kind::single_Advection_no_Stokes_v2:
             return true;
 
           case Parameters<dim>::NonlinearSolver::Kind::no_Advection_iterated_Stokes:
@@ -883,6 +884,7 @@ namespace aspect
 
           case Parameters<dim>::NonlinearSolver::Kind::single_Advection_no_Stokes:
           case Parameters<dim>::NonlinearSolver::Kind::no_Advection_no_Stokes:
+          case Parameters<dim>::NonlinearSolver::Kind::single_Advection_no_Stokes_v2:
             return false;
         }
       Assert(false, ExcNotImplemented());
@@ -1937,6 +1939,12 @@ namespace aspect
             case NonlinearSolver::no_Advection_no_Stokes:
             {
               solve_no_advection_no_stokes();
+              break;
+            }
+
+            case NonlinearSolver::single_Advection_no_Stokes_v2:
+            {
+              solve_single_advection_no_stokes_v2();
               break;
             }
 

@@ -544,7 +544,7 @@ namespace aspect
 
           old_velocities.resize(n_particles_in_cell);
           for (unsigned int i=0; i<n_particles_in_cell; ++i)
-            old_velocities[i] = velocity_evaluator.get_value(i);
+            old_velocities[i] = 0;
         }
 
       if (required_solution_vectors[2] == true)
@@ -558,7 +558,7 @@ namespace aspect
 
           velocities.resize(n_particles_in_cell);
           for (unsigned int i=0; i<n_particles_in_cell; ++i)
-            velocities[i] = velocity_evaluator.get_value(i);
+            velocities[i] = 0;
         }
 
       integrator->local_integrate_step(begin_particle,

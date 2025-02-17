@@ -572,6 +572,8 @@ namespace aspect
        */
       void solve_single_advection_single_stokes ();
 
+      void solve_single_advection_no_stokes_v2 ();
+
       /**
        * This function implements one scheme for the various
        * steps necessary to assemble and solve the nonlinear problem.
