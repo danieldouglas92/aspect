@@ -42,20 +42,28 @@ namespace aspect
 
         for (unsigned int c=0; c < out.densities.size(); ++c)
           {
-            const double ak = reference_thermal_expansivities[c]/reference_isothermal_compressibilities[c];
-            const double f = (1. + (pressure - ak*(temperature - reference_temperatures[c])) *
-                              isothermal_bulk_modulus_pressure_derivatives[c] *
-                              reference_isothermal_compressibilities[c]);
+            // const double ak = reference_thermal_expansivities[c]/reference_isothermal_compressibilities[c];
+            // const double f = (1. + (pressure - ak*(temperature - reference_temperatures[c])) *
+            //                   isothermal_bulk_modulus_pressure_derivatives[c] *
+            //                   reference_isothermal_compressibilities[c]);
 
-            out.densities[c] = reference_densities[c]*std::pow(f, 1./isothermal_bulk_modulus_pressure_derivatives[c]);
-            out.thermal_expansion_coefficients[c] = reference_thermal_expansivities[c] / f;
-            out.specific_heat_capacities[c] = (isochoric_specific_heats[c] +
-                                               (temperature*reference_thermal_expansivities[c] *
-                                                ak * std::pow(f, -1.-(1./isothermal_bulk_modulus_pressure_derivatives[c]))
-                                                / reference_densities[c]));
-            out.compressibilities[c] = reference_isothermal_compressibilities[c]/f;
+            // out.densities[c] = reference_densities[c]*std::pow(f, 1./isothermal_bulk_modulus_pressure_derivatives[c]);
+            // out.thermal_expansion_coefficients[c] = reference_thermal_expansivities[c] / f;
+            // out.specific_heat_capacities[c] = (isochoric_specific_heats[c] +
+            //                                    (temperature*reference_thermal_expansivities[c] *
+            //                                     ak * std::pow(f, -1.-(1./isothermal_bulk_modulus_pressure_derivatives[c]))
+            //                                     / reference_densities[c]));
+            // out.compressibilities[c] = reference_isothermal_compressibilities[c]/f;
+            // out.entropy_derivative_pressure[c] = 0.;
+            // out.entropy_derivative_temperature[c] = 0.;
+            
+            out.thermal_expansion_coefficients[c] = reference_thermal_expansivities[c];
+            out.specific_heat_capacities[c] = isochoric_specific_heats[c];
+            out.compressibilities[c] = reference_isothermal_compressibilities[c];
             out.entropy_derivative_pressure[c] = 0.;
             out.entropy_derivative_temperature[c] = 0.;
+            out.densities[c] = reference_densities[c] * std::exp(out.compressibilities[c] * (pressure - this->get_surface_pressure()) -
+                                                      out.thermal_expansion_coefficients[c] * (temperature - this->get_adiabatic_surface_temperature()));;
           }
       }
 

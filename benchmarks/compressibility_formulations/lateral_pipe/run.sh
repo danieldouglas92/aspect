@@ -2,7 +2,7 @@
 
 # Run all combinations of models in this folder
 
-for repetitions in 2 4 8 16 32 64 128; do #1 2 4 8 16 32 64 128
+for repetitions in 64 128; do #1 2 4 8 16 32 64 128
   echo "subsection Geometry model" > repetitions.prm
   echo "subsection Box" >> repetitions.prm
   echo "set X repetitions = $repetitions" >> repetitions.prm

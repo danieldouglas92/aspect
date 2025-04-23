@@ -85,6 +85,8 @@ namespace aspect
          * @}
          */
 
+        void create_additional_named_outputs (MaterialModel::MaterialModelOutputs<dim> &out) const override;
+
         /**
          * @name Functions used in dealing with run-time parameters
          * @{

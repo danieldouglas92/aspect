@@ -69,6 +69,11 @@ namespace aspect
             out.reaction_terms[i][c] = 0.0;
 
         }
+        const unsigned int density_field_index = this->introspection().find_composition_type(Parameters<dim>::CompositionalFieldDescription::density);
+
+        if (PrescribedFieldOutputs<dim> *prescribed_field_out = out.template get_additional_output<PrescribedFieldOutputs<dim>>())
+          for (unsigned int i=0; i < in.n_evaluation_points(); ++i)
+            prescribed_field_out->prescribed_field_outputs[i][density_field_index] = out.densities[i];
     }
 
     template <int dim>
@@ -77,6 +82,19 @@ namespace aspect
     is_compressible () const
     {
       return equation_of_state.is_compressible();
+    }
+
+    template <int dim>
+    void
+    MulticomponentCompressible<dim>::create_additional_named_outputs (MaterialModel::MaterialModelOutputs<dim> &out) const
+    {
+      if (out.template get_additional_output<PrescribedFieldOutputs<dim>>() == nullptr)
+        {
+          const unsigned int n_points = out.n_evaluation_points();
+          out.additional_outputs.push_back(
+            std::unique_ptr<MaterialModel::AdditionalMaterialOutputs<dim>>
+            (new MaterialModel::PrescribedFieldOutputs<dim> (n_points, this->n_compositional_fields())));
+        }
     }
 
     template <int dim>
