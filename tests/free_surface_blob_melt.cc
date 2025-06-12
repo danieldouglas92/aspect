@@ -33,7 +33,8 @@ namespace aspect
         virtual void evaluate(const MaterialModel::MaterialModelInputs<dim> &in,
                               MaterialModel::MaterialModelOutputs<dim> &out) const;
         virtual void melt_fractions (const MaterialModel::MaterialModelInputs<dim> &in,
-                                     std::vector<double> &melt_fractions) const;
+                                     std::vector<double> &melt_fractions,
+                                     const MaterialModel::MaterialModelOutputs<dim> *out = nullptr) const override;
         virtual bool is_compressible () const;
         /**
          * @}
