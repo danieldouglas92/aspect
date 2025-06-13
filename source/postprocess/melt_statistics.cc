@@ -35,7 +35,12 @@ namespace aspect
     std::pair<std::string,std::string>
     MeltStatistics<dim>::execute (TableHandler &statistics)
     {
-
+      // Use an iterated trapezodal quadrature formula based on the temperature
+      // element for computing the min/max, both of which may lie of the
+      // boundaries of the cell. Iterate 'degree' times to ensure the evaluation
+      // points are in fact the support points.
+      // Addtionally, use a Gauss quadrature formula for evaluating the
+      // integrated melt fraction within the cell.
       const QIterated<dim> quadrature_formula_for_max (QTrapezoid<1>(),
                                                        this->get_parameters().temperature_degree);
       const unsigned int n_q_points_for_max = quadrature_formula_for_max.size();
