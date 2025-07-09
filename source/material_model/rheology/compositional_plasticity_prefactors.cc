@@ -96,11 +96,8 @@ namespace aspect
               double prefactor_from_function =
                 prefactor_function->value(Utilities::convert_array_to_point<dim>(point.get_coordinates()),index);
 
-              // Convert angles from degrees to radians
-              prefactor_from_function *= constants::degree_to_radians;
-
               plasticity_parameters.first *= prefactor_from_function;
-              plasticity_parameters.second *= prefactor_from_function;
+              plasticity_parameters.second *= prefactor_from_function * constants::degree_to_radians;
 
               return plasticity_parameters;
             }
