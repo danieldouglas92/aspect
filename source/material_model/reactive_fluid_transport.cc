@@ -501,11 +501,11 @@ namespace aspect
           else
             AssertThrow(false, ExcMessage("Not a valid fluid-solid reaction scheme"));
 
-          if (fluid_solid_reaction_scheme == no_reaction)
-            {
-              AssertThrow(this->get_parameters().use_operator_splitting == false,
-                          ExcMessage("The Fluid-reaction scheme no reaction should not be used with operator splitting."));
-            }
+          // if (fluid_solid_reaction_scheme == no_reaction)
+          //   {
+          //     AssertThrow(this->get_parameters().use_operator_splitting == false,
+          //                 ExcMessage("The Fluid-reaction scheme no reaction should not be used with operator splitting."));
+          //   }
 
           if (fluid_solid_reaction_scheme == zero_solubility)
             {
