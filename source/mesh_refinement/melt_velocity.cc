@@ -45,7 +45,7 @@ namespace aspect
                                           std::map<types::boundary_id,const Function<dim>*>(),
                                           this->get_solution(),
                                           indicators,
-										  mask,
+                                          mask,
                                           0,
                                           0,
                                           this->get_triangulation().locally_owned_subdomain());
