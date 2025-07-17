@@ -49,7 +49,7 @@ namespace aspect
       else
         {
           // 0.01 = 1% melt
-          return reference_permeability * Utilities::fixed_power<3>(0.01) / eta_f;
+          return reference_permeability * Utilities::fixed_power<3>(reference_porosity) / eta_f;
         }
     }
 
@@ -220,13 +220,11 @@ namespace aspect
                   fluid_out->fluid_densities[q] = reference_rho_f * std::exp(fluid_compressibility * (in.pressure[q] - this->get_surface_pressure()));
                   if (in.requests_property(MaterialProperties::viscosity))
                     {
-                      const double phi_0 = 0.01;
-
                       // Limit the porosity to be no smaller than 1e-8 when
                       // calculating fluid effects on viscosities.
                       porosity = std::max(porosity, min_compaction_porosity);
                       const double shear_viscosity = std::max(std::min(out.viscosities[q], max_compaction_shear_visc), min_compaction_shear_visc);
-                      fluid_out->compaction_viscosities[q] = std::max(std::min(shear_viscosity * shear_to_bulk_viscosity_ratio * phi_0/porosity, max_compaction_visc), min_compaction_visc);
+                      fluid_out->compaction_viscosities[q] = std::max(std::min(shear_viscosity * shear_to_bulk_viscosity_ratio * reference_porosity/porosity, max_compaction_visc), min_compaction_visc);
                     }
                 }
             }
@@ -437,6 +435,9 @@ namespace aspect
           prm.declare_entry ("Minimum shear viscosity for compaction viscosity", "1",
                              Patterns::Double (0.),
                              "The minimum shear viscosity used for determining the compaction viscosity. Units: \\text{Pa} \\text{s}}.");
+          prm.declare_entry ("Reference porosity", "0.01",
+                             Patterns::Double (0.),
+                             "The reference porosity used to determine the reference Darcy coefficient. Units: none.");
         }
         prm.leave_subsection();
 
@@ -470,6 +471,7 @@ namespace aspect
           min_compaction_porosity           = prm.get_double ("Minimum compaction porosity");
           max_compaction_shear_visc         = prm.get_double ("Maximum shear viscosity for compaction viscosity");
           min_compaction_shear_visc         = prm.get_double ("Minimum shear viscosity for compaction viscosity");
+          reference_porosity                = prm.get_double ("Reference porosity");
 
           // Create the base model and initialize its SimulatorAccess base
           // class; it will get a chance to read its parameters below after we

@@ -170,6 +170,7 @@ namespace aspect
         double min_compaction_porosity;
         double max_compaction_shear_visc;
         double min_compaction_shear_visc;
+        double reference_porosity;
 
         /**
          * Time scale for fluid release and absorption.
