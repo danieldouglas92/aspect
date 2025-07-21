@@ -44,6 +44,7 @@ namespace aspect
        *  2) mid-ocean ridge basalt (MORB)
        *  3) gabbro
        *  4) peridotite
+       *  5) overriding
        * from Tian, 2019 https://doi.org/10.1029/2019GC008488.
        *
        * These functions can be used in the calculation of reactive fluid transport
@@ -142,18 +143,18 @@ namespace aspect
            * and 50 GPa for sediment. These cutoff pressures were determined by extending the pressure range in Tian et al. (2019)
            * and observing where the maximum allowed water contents jump towards infinite values.
            */
-          const std::array<double,4 > pressure_cutoffs {{10, 26, 16, 50}};
+          const std::array<double,5 > pressure_cutoffs {{10, 26, 16, 50, 10}};
 
           std::vector<std::vector<double>> devolatilization_enthalpy_changes {LR_peridotite_poly_coeffs, LR_gabbro_poly_coeffs, \
-                                                                               LR_MORB_poly_coeffs, LR_sediment_poly_coeffs
+                                                                               LR_MORB_poly_coeffs, LR_sediment_poly_coeffs, LR_peridotite_poly_coeffs
                                                                               };
 
           std::vector<std::vector<double>> water_mass_fractions {csat_peridotite_poly_coeffs, csat_gabbro_poly_coeffs, \
-                                                                  csat_MORB_poly_coeffs, csat_sediment_poly_coeffs
+                                                                  csat_MORB_poly_coeffs, csat_sediment_poly_coeffs, csat_peridotite_poly_coeffs
                                                                  };
 
           std::vector<std::vector<double>> devolatilization_onset_temperatures {Td_peridotite_poly_coeffs, Td_gabbro_poly_coeffs, \
-                                                                                 Td_MORB_poly_coeffs, Td_sediment_poly_coeffs
+                                                                                 Td_MORB_poly_coeffs, Td_sediment_poly_coeffs, Td_peridotite_poly_coeffs
                                                                                 };
       };
     }

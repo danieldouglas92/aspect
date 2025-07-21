@@ -47,14 +47,16 @@ namespace aspect
         const unsigned int MORB_idx = this->introspection().compositional_index_for_name("MORB");
         const unsigned int gabbro_idx = this->introspection().compositional_index_for_name("gabbro");
         const unsigned int peridotite_idx = this->introspection().compositional_index_for_name("peridotite");
+        const unsigned int overriding_idx = this->introspection().compositional_index_for_name("overriding");
 
         // Initialize a vector that stores the compositions (mass fractions) for
         // the four different rock compositions,
-        std::vector<double> tracked_rock_mass_fractions(4);
+        std::vector<double> tracked_rock_mass_fractions(5);
         tracked_rock_mass_fractions[0] = (in.composition[q][peridotite_idx]);
         tracked_rock_mass_fractions[1] = (in.composition[q][gabbro_idx]);
         tracked_rock_mass_fractions[2] = (in.composition[q][MORB_idx]);
         tracked_rock_mass_fractions[3] = (in.composition[q][sediment_idx]);
+        tracked_rock_mass_fractions[4] = (in.composition[q][overriding_idx]);
 
         // The bound water content (water within the solid phase) for the four different rock types
         std::vector<double> tian_eq_bound_water_content = tian_equilibrium_bound_water_content(in, q);
@@ -78,9 +80,9 @@ namespace aspect
                                             unsigned int q) const
       {
         // Create arrays that will store the values of the polynomials at the current pressure
-        std::vector<double> LR_values(4);
-        std::vector<double> csat_values(4);
-        std::vector<double> Td_values(4);
+        std::vector<double> LR_values(5);
+        std::vector<double> csat_values(5);
+        std::vector<double> Td_values(5);
 
         // Loop over the four rock types (peridotite, gabbro, MORB, sediment) and the polynomial
         // coefficients to fill the vectors defined above. The polynomials for LR are defined in
@@ -133,10 +135,10 @@ namespace aspect
           }
 
         // Create an array for the equilibrium bound water content that is calculated from these polynomials
-        std::vector<double> eq_bound_water_content(4);
+        std::vector<double> eq_bound_water_content(5);
 
         // Define the maximum bound water content allowed for the four different rock compositions
-        std::vector<double> max_bound_water_content = {tian_max_peridotite_water, tian_max_gabbro_water, tian_max_MORB_water, tian_max_sediment_water};
+        std::vector<double> max_bound_water_content = {tian_max_peridotite_water, tian_max_gabbro_water, tian_max_MORB_water, tian_max_sediment_water, tian_max_peridotite_water};
 
         // Loop over all rock compositions and fill the equilibrium bound water content, divide by 100 to convert
         // from percentage to fraction (equation 1)
