@@ -215,7 +215,7 @@ namespace aspect
                   double porosity = std::max(in.composition[q][porosity_idx],0.0);
 
                   fluid_out->fluid_viscosities[q] = eta_f;
-                  fluid_out->permeabilities[q] = reference_permeability * Utilities::fixed_power<3>(porosity) * Utilities::fixed_power<2>(1.0-porosity);
+                  fluid_out->permeabilities[q] = reference_permeability * Utilities::fixed_power<3>(porosity);
 
                   fluid_out->fluid_densities[q] = reference_rho_f * std::exp(fluid_compressibility * (in.pressure[q] - this->get_surface_pressure()));
                   if (in.requests_property(MaterialProperties::viscosity))
