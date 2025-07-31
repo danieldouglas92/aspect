@@ -103,6 +103,8 @@ namespace aspect
           std::vector<double> dislocation_water_fugacity_exponents;
           std::vector<double> minimum_mass_fraction_water_for_dry_creep;
 
+          double adiabatic_fugacity_gradient;
+
           bool use_the_bound_fluid_for_water_fugacity;
 
           // From Hirth & Kohlstaedt 2004, equation 6

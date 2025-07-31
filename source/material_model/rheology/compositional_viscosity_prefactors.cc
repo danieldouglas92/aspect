@@ -64,7 +64,7 @@ namespace aspect
               // and Kohlstaedt 2004 10.1029/138GM06.
               const double temperature_for_fugacity = (this->simulator_is_past_initialization())
                                                       ?
-                                                      in.temperature[q]
+                                                      in.temperature[q] * adiabatic_fugacity_gradient
                                                       :
                                                       this->get_adiabatic_conditions().temperature(in.position[q]);
               AssertThrow(temperature_for_fugacity != 0, ExcMessage(
@@ -131,6 +131,17 @@ namespace aspect
                            "required by ASPECT for dislocation creep is r/n, where n is the stress exponent "
                            "for dislocation creep, which typically is 3.5. Units: none.");
 
+        prm.declare_entry ("Adiabat temperature gradient for fugacity", "0.0",
+                           Patterns::Double (0.),
+                           "Add an adiabatic temperature gradient to the temperature used in the flow law "
+                           "so that the activation volume is consistent with what one would use in a "
+                           "earth-like (compressible) model. Default is set so this is off. "
+                           "Note that this is a linear approximation of the real adiabatic gradient, which "
+                           "is okay for the upper mantle, but is not really accurate for the lower mantle. "
+                           "Using a pressure gradient of 32436 Pa/m, then a value of "
+                           "0.3 K/km = 0.0003 K/m = 9.24e-09 K/Pa gives an earth-like adiabat."
+                           "Units: \\si{\\kelvin\\per\\pascal}.");
+
         prm.declare_entry ("Viscosity prefactor scheme", "none",
                            Patterns::Selection("none|HK04 olivine hydration"),
                            "Select what type of viscosity multiplicative prefactor scheme to apply. "
@@ -160,6 +171,8 @@ namespace aspect
                         ExcMessage("The HK04 olivine hydration pre-exponential factor only works if "
                                    "there is a compositional field called bound_fluid."));
             viscosity_prefactor_scheme = hk04_olivine_hydration;
+
+            adiabatic_fugacity_gradient = prm.get_double("Adiabat temperature gradient for fugacity");
 
             // Retrieve the list of chemical names
             std::vector<std::string> chemical_field_names = this->introspection().chemical_composition_field_names();
