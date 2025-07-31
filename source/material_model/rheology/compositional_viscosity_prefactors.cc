@@ -64,7 +64,7 @@ namespace aspect
               // and Kohlstaedt 2004 10.1029/138GM06.
               const double temperature_for_fugacity = (this->simulator_is_past_initialization())
                                                       ?
-                                                      in.temperature[q] * adiabatic_fugacity_gradient
+                                                      in.temperature[q] + in.pressure[q] * adiabatic_fugacity_gradient
                                                       :
                                                       this->get_adiabatic_conditions().temperature(in.position[q]);
               AssertThrow(temperature_for_fugacity != 0, ExcMessage(
