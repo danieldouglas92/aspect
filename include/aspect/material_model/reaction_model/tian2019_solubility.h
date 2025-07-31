@@ -114,6 +114,8 @@ namespace aspect
            */
           bool use_adiabatic_pressure_for_reactions;
 
+          double adiabatic_temperature_gradient;
+
           /**
            *
            * The following coefficients are taken from a publication from Tian et al., 2019, and can be found

@@ -144,8 +144,9 @@ namespace aspect
         // from percentage to fraction (equation 1)
         for (unsigned int k = 0; k<LR_values.size(); ++k)
           {
+            const double TEMP = in.temperature[q] + adiabatic_temperature_gradient * this->get_adiabatic_conditions().pressure(in.position[q]);
             eq_bound_water_content[k] = (std::min(std::exp(csat_values[k]) * \
-                                                  std::exp(std::exp(LR_values[k]) * (1/in.temperature[q] - 1/Td_values[k])), \
+                                                  std::exp(std::exp(LR_values[k]) * (1/TEMP - 1/Td_values[k])), \
                                                   max_bound_water_content[k]) / 100.0);
           }
         return eq_bound_water_content;
@@ -163,6 +164,10 @@ namespace aspect
                            "If false, the full pressure is used instead. When simulating fully coupled "
                            "fluid transport, setting this to true is recommended since the compaction "
                            "pressure can lead to numerical instabilities when determining reaction rates.");
+        prm.declare_entry ("Adiabatic temperature gradient", "0.0",
+                           Patterns::Double (0),
+                           "The value for the adiabatic temperature gradient that is added to the temperature "
+                           "when computing the reactions. Units are in K/Pa.");
         prm.declare_entry ("Maximum weight percent water in sediment", "3",
                            Patterns::Double (0),
                            "The maximum allowed weight percent that the sediment composition can hold.");
@@ -195,10 +200,11 @@ namespace aspect
                     ExcMessage("The Tian approximation only works "
                                "if there is a compositional field called peridotite."));
         use_adiabatic_pressure_for_reactions = prm.get_bool ("Use adiabatic pressure for reactions");
-        tian_max_peridotite_water         = prm.get_double ("Maximum weight percent water in peridotite");
-        tian_max_gabbro_water             = prm.get_double ("Maximum weight percent water in gabbro");
-        tian_max_MORB_water               = prm.get_double ("Maximum weight percent water in MORB");
-        tian_max_sediment_water           = prm.get_double ("Maximum weight percent water in sediment");
+        adiabatic_temperature_gradient       = prm.get_double ("Adiabatic temperature gradient");
+        tian_max_peridotite_water            = prm.get_double ("Maximum weight percent water in peridotite");
+        tian_max_gabbro_water                = prm.get_double ("Maximum weight percent water in gabbro");
+        tian_max_MORB_water                  = prm.get_double ("Maximum weight percent water in MORB");
+        tian_max_sediment_water              = prm.get_double ("Maximum weight percent water in sediment");
       }
     }
   }
