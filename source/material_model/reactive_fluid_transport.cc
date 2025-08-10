@@ -215,7 +215,7 @@ namespace aspect
                   double porosity = std::max(in.composition[q][porosity_idx],0.0);
 
                   fluid_out->fluid_viscosities[q] = eta_f;
-                  fluid_out->permeabilities[q] = reference_permeability * Utilities::fixed_power<3>(porosity);
+                  fluid_out->permeabilities[q] = std::min(maximum_permeability, reference_permeability * Utilities::fixed_power<3>(porosity));
 
                   fluid_out->fluid_densities[q] = reference_rho_f * std::exp(fluid_compressibility * (in.pressure[q] - this->get_surface_pressure()));
                   if (in.requests_property(MaterialProperties::viscosity))
@@ -438,6 +438,12 @@ namespace aspect
           prm.declare_entry ("Reference porosity", "0.01",
                              Patterns::Double (0.),
                              "The reference porosity used to determine the reference Darcy coefficient. Units: none.");
+          prm.declare_entry ("Maximum permeability", "1",
+                             Patterns::Double (0.),
+                             "The maximum permeability used to determine the Darcy coefficient. "
+                             "This is used to avoid numerical problems in models with very high "
+                             "permeabilities, where the Darcy coefficient would be very large and thus "
+                             "the time step size would be very small. Units: \\si{\\meter\\squared}.");
         }
         prm.leave_subsection();
 
@@ -472,6 +478,7 @@ namespace aspect
           max_compaction_shear_visc         = prm.get_double ("Maximum shear viscosity for compaction viscosity");
           min_compaction_shear_visc         = prm.get_double ("Minimum shear viscosity for compaction viscosity");
           reference_porosity                = prm.get_double ("Reference porosity");
+          maximum_permeability              = prm.get_double ("Maximum permeability");
 
           // Create the base model and initialize its SimulatorAccess base
           // class; it will get a chance to read its parameters below after we
