@@ -421,6 +421,9 @@ namespace aspect
        * be averaged cell-wise.
        */
       bool average_melt_velocity;
+
+      double shear_viscosity_cutoff;
+
     };
   }
 
@@ -531,6 +534,7 @@ namespace aspect
       double limited_darcy_coefficient(const double K_D,
                                        const bool is_melt_cell) const;
 
+      double limited_shear_viscosity(const double uncapped_shear_viscosity) const;
       /**
        * Return a pointer to the boundary fluid pressure.
        */

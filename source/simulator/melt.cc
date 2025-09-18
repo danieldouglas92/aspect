@@ -264,7 +264,7 @@ namespace aspect
               ++i;
             }
 
-          const double eta = scratch.material_model_outputs.viscosities[q];
+          const double eta = this->get_melt_handler().limited_shear_viscosity(scratch.material_model_outputs.viscosities[q]);
           const double one_over_eta = 1. / eta;
           const double K_D = this->get_melt_handler().limited_darcy_coefficient(melt_outputs->permeabilities[q] / melt_outputs->fluid_viscosities[q],
                                                                                 p_c_scale > 0);
@@ -466,14 +466,16 @@ namespace aspect
             }
 
           // Viscosity scalar
-          const double eta = (scratch.rebuild_stokes_matrix
+          const double ETA = (scratch.rebuild_stokes_matrix
                               ?
                               scratch.material_model_outputs.viscosities[q]
                               :
                               numbers::signaling_nan<double>());
+
+          const double eta = this->get_melt_handler().limited_shear_viscosity(ETA);
           const double eta_two_thirds = (scratch.rebuild_stokes_matrix
                                          ?
-                                         scratch.material_model_outputs.viscosities[q] * 2.0 / 3.0
+                                         eta * 2.0 / 3.0
                                          :
                                          numbers::signaling_nan<double>());
           const Tensor<1,dim>
@@ -1627,6 +1629,15 @@ namespace aspect
   }
 
 
+  template <int dim>
+  double
+  MeltHandler<dim>::
+  limited_shear_viscosity(const double uncapped_shear_viscosity) const
+  {
+    const double limited_visc = std::min(uncapped_shear_viscosity, melt_parameters.shear_viscosity_cutoff);
+    return limited_visc;
+  }
+
 
   template <int dim>
   const BoundaryFluidPressure::Interface<dim> &
@@ -1785,6 +1796,14 @@ namespace aspect
                            "accuracy and convergence behavior of the melt velocity is important "
                            "(like in benchmark cases with an analytical solution), this parameter "
                            "should probably be set to 'false'.");
+        prm.declare_entry ("Maximum shear viscosity for fluid velocity", "1e50",
+                           Patterns::Double (),
+                           "The maximum shear viscosity that is used to compute the fluid velocity. "
+                           "If the shear viscosity of the melt is larger than this value, the fluid "
+                           "velocity is set to zero. This is useful to avoid numerical problems in "
+                           "models with very high melt viscosities, where the melt velocity would be "
+                           "very small and thus the time step size would be very small as well. "
+                           "This parameter is only used if 'Average melt velocity' is set to true.");
       }
       prm.leave_subsection();
 
@@ -1802,6 +1821,7 @@ namespace aspect
         heat_advection_by_melt = prm.get_bool("Heat advection by melt");
         use_discontinuous_p_c = prm.get_bool("Use discontinuous compaction pressure");
         average_melt_velocity = prm.get_bool("Average melt velocity");
+        shear_viscosity_cutoff = prm.get_double("Maximum shear viscosity for fluid velocity");
       }
       prm.leave_subsection();
     }
