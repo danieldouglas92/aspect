@@ -37,76 +37,86 @@ namespace aspect
         return {"", ""};
 
       // create a quadrature formula based on the compositional element alone.
-      const Quadrature<dim> &quadrature_formula = this->introspection().quadratures.compositional_field_max;
-      const unsigned int n_q_points = quadrature_formula.size();
-
-      FEValues<dim> fe_values (this->get_mapping(),
-                               this->get_fe(),
-                               quadrature_formula,
-                               update_values   |
-                               update_quadrature_points |
-                               update_gradients |
-                               update_JxW_values);
-
-      std::vector<double> compositional_mass_values(n_q_points);
-
-      MaterialModel::MaterialModelInputs<dim> in(fe_values.n_quadrature_points, this->n_compositional_fields());
-      MaterialModel::MaterialModelOutputs<dim> out(fe_values.n_quadrature_points, this->n_compositional_fields());
-      in.requested_properties = MaterialModel::MaterialProperties::density;
-
-      std::vector<double> local_compositional_mass_integrals (this->n_compositional_fields());
-
-      // compute the integral quantities by quadrature
-      for (const auto &cell : this->get_dof_handler().active_cell_iterators())
-        if (cell->is_locally_owned())
-          {
-            fe_values.reinit (cell);
-            in.reinit(fe_values, cell, this->introspection(), this->get_solution());
-
-            this->get_material_model().evaluate(in, out);
-
-            for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
-              {
-                fe_values[this->introspection().extractors.compositional_fields[c]].get_function_values (this->get_solution(),
-                    compositional_mass_values);
-                for (unsigned int q=0; q<n_q_points; ++q)
-                  if (this->get_geometry_model().depth(in.position[q]) >= cutoff_depth)
-                    local_compositional_mass_integrals[c] += out.densities[q] * compositional_mass_values[q] * fe_values.JxW(q);
-              }
-          }
-      // compute the sum over all processors
-      std::vector<double> global_compositional_mass_integrals (local_compositional_mass_integrals.size());
-      Utilities::MPI::sum (local_compositional_mass_integrals,
-                           this->get_mpi_communicator(),
-                           global_compositional_mass_integrals);
-
-
-      // finally produce something for the statistics file
-      for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
-        {
-          statistics.add_value ("Global mass for composition " + this->introspection().name_for_compositional_index(c),
-                                global_compositional_mass_integrals[c]);
-        }
-
-      // also make sure that the other columns filled by this object
-      // all show up with sufficient accuracy and in scientific notation
-      for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
-        {
-          const std::string columns[] = {"Global mass for composition " + this->introspection().name_for_compositional_index(c)};
-          for (const auto &col : columns)
-            {
-              statistics.set_precision (col, 8);
-              statistics.set_scientific (col, true);
-            }
-        }
 
       std::ostringstream output;
-      output.precision(4);
-      for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
+      for (unsigned int depth_index=0; depth_index<number_of_depths; ++depth_index)
         {
-          output << global_compositional_mass_integrals[c];
-          if (c+1 != this->n_compositional_fields())
-            output << " // ";
+          const Quadrature<dim> &quadrature_formula = this->introspection().quadratures.compositional_field_max;
+          const unsigned int n_q_points = quadrature_formula.size();
+
+          FEValues<dim> fe_values (this->get_mapping(),
+                                  this->get_fe(),
+                                  quadrature_formula,
+                                  update_values   |
+                                  update_quadrature_points |
+                                  update_gradients |
+                                  update_JxW_values);
+
+          std::vector<double> compositional_mass_values(n_q_points);
+
+          MaterialModel::MaterialModelInputs<dim> in(fe_values.n_quadrature_points, this->n_compositional_fields());
+          MaterialModel::MaterialModelOutputs<dim> out(fe_values.n_quadrature_points, this->n_compositional_fields());
+          in.requested_properties = MaterialModel::MaterialProperties::density;
+
+          std::vector<double> local_compositional_mass_integrals (this->n_compositional_fields());
+
+          // compute the integral quantities by quadrature
+          for (const auto &cell : this->get_dof_handler().active_cell_iterators())
+            if (cell->is_locally_owned())
+              {
+                fe_values.reinit (cell);
+                in.reinit(fe_values, cell, this->introspection(), this->get_solution());
+
+                this->get_material_model().evaluate(in, out);
+
+                for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
+                  {
+                    fe_values[this->introspection().extractors.compositional_fields[c]].get_function_values (this->get_solution(),
+                        compositional_mass_values);
+                    for (unsigned int q=0; q<n_q_points; ++q)
+                      {
+                          const double cutoff_depth = cutoff_depths[depth_index];
+                          if (this->get_geometry_model().depth(in.position[q]) >= cutoff_depth)
+                            local_compositional_mass_integrals[c] += out.densities[q] * compositional_mass_values[q] * fe_values.JxW(q);
+                      }
+                  }
+              }
+          // compute the sum over all processors
+          std::vector<double> global_compositional_mass_integrals (local_compositional_mass_integrals.size());
+          Utilities::MPI::sum (local_compositional_mass_integrals,
+                              this->get_mpi_communicator(),
+                              global_compositional_mass_integrals);
+
+
+          // finally produce something for the statistics file
+          for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
+            {
+              statistics.add_value ("Global mass for composition " + this->introspection().name_for_compositional_index(c) + " below depth " + std::to_string(cutoff_depths[depth_index]),
+                                    global_compositional_mass_integrals[c]);
+            }
+
+          // also make sure that the other columns filled by this object
+          // all show up with sufficient accuracy and in scientific notation
+          for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
+            {
+              const std::string columns[] = {"Global mass for composition " + this->introspection().name_for_compositional_index(c) + " below depth " + std::to_string(cutoff_depths[depth_index])};
+              for (const auto &col : columns)
+                {
+                  statistics.set_precision (col, 8);
+                  statistics.set_scientific (col, true);
+                }
+            }
+
+          // std::ostringstream output;
+          output.precision(4);
+          output << " Mass below " << cutoff_depths[depth_index] << " m: ";
+          for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
+            {
+              output << global_compositional_mass_integrals[c];
+              if (c+1 != this->n_compositional_fields())
+                output << " // ";
+            }
+          output << std::endl;
         }
 
       return std::pair<std::string, std::string> ("Composition mass:",
@@ -121,9 +131,12 @@ namespace aspect
       {
         prm.enter_subsection("Composition mass statistics");
         {
-          prm.declare_entry ("Cutoff depth", "0.0",
-                             Patterns::Double (0.),
-                             "The depth below which the compositional mass is computed. ");
+          prm.declare_entry ("Number of depth intervals", "1",
+                             Patterns::Integer (1),
+                             "The number of depth intervals below which the compositional mass is computed. ");
+          prm.declare_entry ("Cutoff depths", "0.0",
+                             Patterns::Anything(),
+                             "The depths below which the compositional mass is computed. ");
         }
         prm.leave_subsection();
       }
@@ -138,7 +151,10 @@ namespace aspect
       {
         prm.enter_subsection("Composition mass statistics");
         {
-          cutoff_depth = prm.get_double ("Cutoff depth");
+          number_of_depths = prm.get_integer("Number of depth intervals");
+          cutoff_depths = Utilities::possibly_extend_from_1_to_N (Utilities::string_to_double(Utilities::split_string_list(prm.get("Cutoff depths"))),
+                                                                  number_of_depths,
+                                                                  "Cutoff depths");
         }
         prm.leave_subsection();
       }

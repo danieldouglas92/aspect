@@ -60,7 +60,8 @@ namespace aspect
         parse_parameters (ParameterHandler &prm) override;
 
       private:
-        double cutoff_depth;
+        unsigned int number_of_depths;
+        std::vector<double> cutoff_depths;
     };
   }
 }

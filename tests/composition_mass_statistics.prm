@@ -70,7 +70,7 @@ end
 
 # Mesh refinement specifications
 subsection Mesh refinement
-  set Initial adaptive refinement        = 4
+  set Initial adaptive refinement        = 3
   set Initial global refinement          = 0
   set Time steps between mesh refinement = 0
   set Strategy                           =  minimum refinement function
@@ -130,7 +130,8 @@ subsection Postprocess
   set List of postprocessors = material statistics, visualization, composition mass statistics
 
   subsection Composition mass statistics
-    set Cutoff depth = 0
+    set Cutoff depths = 0, 20e3, 40e3, 60e3, 80e3
+    set Number of depth intervals = 5
   end
 
   subsection Visualization
