@@ -38,7 +38,6 @@ namespace aspect
 
       // create a quadrature formula based on the compositional element alone.
 
-      std::ostringstream output;
       for (unsigned int depth_index=0; depth_index<number_of_depths; ++depth_index)
         {
           const Quadrature<dim> &quadrature_formula = this->introspection().quadratures.compositional_field_max;
@@ -106,21 +105,10 @@ namespace aspect
                   statistics.set_scientific (col, true);
                 }
             }
-
-          // std::ostringstream output;
-          output.precision(4);
-          output << " Mass below " << cutoff_depths[depth_index] << " m: ";
-          for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
-            {
-              output << global_compositional_mass_integrals[c];
-              if (c+1 != this->n_compositional_fields())
-                output << " // ";
-            }
-          output << std::endl;
         }
 
       return std::pair<std::string, std::string> ("Composition mass:",
-                                                  output.str());
+                                                  "Done");
     }
 
     template <int dim>
