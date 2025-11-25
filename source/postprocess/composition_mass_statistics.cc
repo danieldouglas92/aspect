@@ -31,7 +31,7 @@ namespace aspect
   {
     template <int dim>
     std::pair<std::string,std::string>
-    CompositionStatistics<dim>::execute (TableHandler &statistics)
+    CompositionMassStatistics<dim>::execute (TableHandler &statistics)
     {
       if (this->n_compositional_fields() == 0)
         return {"", ""};
@@ -50,8 +50,8 @@ namespace aspect
 
       std::vector<double> compositional_mass_values(n_q_points);
 
-      MaterialModel::MaterialModelInputs<dim> in(fe_face_values.n_quadrature_points, this->n_compositional_fields());
-      MaterialModel::MaterialModelOutputs<dim> out(fe_face_values.n_quadrature_points, this->n_compositional_fields());
+      MaterialModel::MaterialModelInputs<dim> in(fe_values.n_quadrature_points, this->n_compositional_fields());
+      MaterialModel::MaterialModelOutputs<dim> out(fe_values.n_quadrature_points, this->n_compositional_fields());
       in.requested_properties = MaterialModel::MaterialProperties::density;
 
       std::vector<double> local_compositional_mass_integrals (this->n_compositional_fields());
@@ -61,7 +61,7 @@ namespace aspect
         if (cell->is_locally_owned())
           {
             fe_values.reinit (cell);
-            in.reinit(fe_face_values, cell, this->introspection(), this->get_solution());
+            in.reinit(fe_values, cell, this->introspection(), this->get_solution());
 
             this->get_material_model().evaluate(in, out);
 
@@ -70,7 +70,8 @@ namespace aspect
                 fe_values[this->introspection().extractors.compositional_fields[c]].get_function_values (this->get_solution(),
                     compositional_mass_values);
                 for (unsigned int q=0; q<n_q_points; ++q)
-                  local_compositional_mass_integrals[c] += out.densities[q] * compositional_mass_values[q] * fe_values.JxW(q);
+                  if (this->get_geometry_model().depth(in.position[q]) >= cutoff_depth)
+                    local_compositional_mass_integrals[c] += out.densities[q] * compositional_mass_values[q] * fe_values.JxW(q);
               }
           }
       // compute the sum over all processors
@@ -84,7 +85,7 @@ namespace aspect
       for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
         {
           statistics.add_value ("Global mass for composition " + this->introspection().name_for_compositional_index(c),
-                                global_compositional_integrals[c]);
+                                global_compositional_mass_integrals[c]);
         }
 
       // also make sure that the other columns filled by this object
@@ -103,7 +104,7 @@ namespace aspect
       output.precision(4);
       for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
         {
-          output << global_compositional_integrals[c];
+          output << global_compositional_mass_integrals[c];
           if (c+1 != this->n_compositional_fields())
             output << " // ";
         }
@@ -111,9 +112,42 @@ namespace aspect
       return std::pair<std::string, std::string> ("Composition mass:",
                                                   output.str());
     }
-  }
-}
 
+    template <int dim>
+    void
+    CompositionMassStatistics<dim>::declare_parameters (ParameterHandler &prm)
+    {
+      prm.enter_subsection("Postprocess");
+      {
+        prm.enter_subsection("Composition mass statistics");
+        {
+          prm.declare_entry ("Cutoff depth", "0.0",
+                             Patterns::Double (0.),
+                             "The depth below which the compositional mass is computed. ");
+        }
+        prm.leave_subsection();
+      }
+      prm.leave_subsection();
+    }
+
+    template <int dim>
+    void
+    CompositionMassStatistics<dim>::parse_parameters (ParameterHandler &prm)
+    {
+      prm.enter_subsection("Postprocess");
+      {
+        prm.enter_subsection("Composition mass statistics");
+        {
+          cutoff_depth = prm.get_double ("Cutoff depth");
+        }
+        prm.leave_subsection();
+      }
+      prm.leave_subsection();
+    }
+
+  }
+
+}
 
 // explicit instantiations
 namespace aspect

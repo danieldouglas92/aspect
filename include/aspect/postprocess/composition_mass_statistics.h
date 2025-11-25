@@ -19,8 +19,8 @@
 */
 
 
-#ifndef _aspect_postprocess_composition_statistics_h
-#define _aspect_postprocess_composition_statistics_h
+#ifndef _aspect_postprocess_composition_mass_statistics_h
+#define _aspect_postprocess_composition_mass_statistics_h
 
 #include <aspect/postprocess/interface.h>
 #include <aspect/simulator_access.h>
@@ -37,7 +37,7 @@ namespace aspect
      * @ingroup Postprocessing
      */
     template <int dim>
-    class CompositionStatistics : public Interface<dim>, public ::aspect::SimulatorAccess<dim>
+    class CompositionMassStatistics : public Interface<dim>, public ::aspect::SimulatorAccess<dim>
     {
       public:
         /**
@@ -45,6 +45,22 @@ namespace aspect
          */
         std::pair<std::string,std::string>
         execute (TableHandler &statistics) override;
+
+        /**
+         * Declare the parameters this class takes through input files.
+         */
+        static
+        void
+        declare_parameters (ParameterHandler &prm);
+
+        /**
+         * Read the parameters this class declares from the parameter file.
+         */
+        void
+        parse_parameters (ParameterHandler &prm) override;
+
+      private:
+        double cutoff_depth;
     };
   }
 }
