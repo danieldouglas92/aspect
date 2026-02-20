@@ -228,6 +228,9 @@ namespace aspect
       Assert(current_solution_at_points.size() == this->evaluation_points.size(), ExcInternalError());
       std::vector<Tensor<1,dim>> velocities(current_solution_at_points.size(), Tensor<1,dim>());
 
+      // What seems to be happening here is that we check if the python script has been loaded/exists. If it does,
+      // we enter this block. In this block, a python dictionary is made which contains the variables that are 
+      // to be passed over to LandLab. 
       if (pModule)
         {
           // Build a dictionary with solution values for each variable to pass to Python:
@@ -243,6 +246,7 @@ namespace aspect
               for (unsigned int j=0; j<current_solution_at_points.size(); ++j)
                 {
                   variable_data[i][j] = current_solution_at_points[j][i];
+                  // std::cout << this->evaluation_points[j] << ": " << variable_names[i] << " = " << variable_data[i][j] << std::endl;
                 }
             }
           for (unsigned int i=0; i<variable_names.size(); ++i)
@@ -254,7 +258,7 @@ namespace aspect
           // Call update_until(). update_until() returns deposition_erosion. This is what eventually
           // gets converted to velocities to deform the ASPECT mesh.
           PyObject *pArgs = PyTuple_Pack(2, PyFloat_FromDouble(this->get_time()), pDict);
-          PyObject *pValue = call_python_function(pModule, "update_until", pArgs);
+          PyObject *pValue = call_python_function(pModule, "update_until", pArgs); // This line calls the landlab function
           Py_DECREF(pDict);
           Py_DECREF(pArgs);
 
