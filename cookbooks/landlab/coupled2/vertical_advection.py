@@ -150,7 +150,7 @@ def get_grid_y(grid_id):
     global model_grid
     return model_grid.node_y
 
-def initalize_landlab_components(landlab_component_parameters):
+def initialize_landlab_components(landlab_component_parameters):
     global model_grid, elevation, linear_diffuser, flow_accumulator, stream_power_eroder, uplift_rate
 
     D    = landlab_component_parameters["Hillslope coefficient"]

@@ -1,10 +1,10 @@
-# This parameter file sets up a model to test the interfacing between
-# the surface processes code LandLab and ASPECT. The model begins with
-# an initial triangular topography that erodes according to Hillslope
-# diffusion over 1 Myr. An analytical solution for this problem exsists
-# via Fourier Transforms, allowing us to quantify how well the interface
-# is performing. We can also compare this to the ASPECT/FastScape interface 
-# to check that both surface processes codes are giving the same answer.
+# This parameter file sets up a model to test the lateral advection of the
+# surface when coupling LandLab and ASPECT. The model begins with an initial
+# gaussian topogaphy (defined in LandLab) in the model of the ASPECT model.
+# The ASPECT velocity boundary conditions are set to first move in the positive
+# x direction for 1 Myr, and then in the positive y direction for 1 Myr. The velocity
+# of the ASPECT model is sent to LandLab where it advects the topography, which is then
+# reflected in ASPECT.
 set Dimension                              = 3
 
 

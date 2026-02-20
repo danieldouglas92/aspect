@@ -114,7 +114,7 @@ namespace aspect
         double landlab_x_extent;
         double landlab_y_extent;
         double landlab_spacing;
-       
+
         double hillslope_diffusion_coefficient;
         double stream_power_erodibility_coefficient;
         bool parameters_in_years;

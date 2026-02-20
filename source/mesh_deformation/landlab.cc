@@ -154,7 +154,7 @@ namespace aspect
 
           {
             // Initialize landlab components
-            // If Use years instead of seconds is false, then we want to make sure we scale the 
+            // If Use years instead of seconds is false, then we want to make sure we scale the
             // parameters in landlab to seconds, since surface processes parameters are reported
             // typically in years.
             double time_scaling_factor = 1.0;
@@ -170,11 +170,11 @@ namespace aspect
                                           );
             Py_DECREF(pDict);
 
-            PyObject *pValue = call_python_function(pModule, "initalize_landlab_components", pArgs);
+            PyObject *pValue = call_python_function(pModule, "initialize_landlab_components", pArgs);
             Py_DECREF(pArgs);
             Py_DECREF(pValue);
           }
-          
+
           {
             // get grid points from the landlab mesh:
             PyObject *pArgs = PyTuple_Pack(1, PyLong_FromLong(-1L));
@@ -251,7 +251,7 @@ namespace aspect
               PyDict_SetItemString(pDict, variable_names[i].c_str(), pValue.get());
             }
 
-          // Call update_until(). update_until() returns deposition_erosion. This is what eventually 
+          // Call update_until(). update_until() returns deposition_erosion. This is what eventually
           // gets converted to velocities to deform the ASPECT mesh.
           PyObject *pArgs = PyTuple_Pack(2, PyFloat_FromDouble(this->get_time()), pDict);
           PyObject *pValue = call_python_function(pModule, "update_until", pArgs);
@@ -404,17 +404,17 @@ namespace aspect
                             "Units: \\si{\\meter\\raisedto{-1}\\per\\year}.");
 
           prm.enter_subsection("Mesh information");
-           {
-              prm.declare_entry("X extent", "100e3",
-                                Patterns::Double(0),
-                                "The extent of the Landlab grid in the x direction. Units: \\si{\\meter}.");
-              prm.declare_entry("Y extent", "100e3",
-                                Patterns::Double(0),
-                                "The extent of the Landlab grid in the y direction. Units: \\si{\\meter}.");
-              prm.declare_entry("Spacing", "1000",
-                                Patterns::Double(0),
-                                "The spacing of the Landlab grid. Units: \\si{\\meter}.");
-           }
+          {
+            prm.declare_entry("X extent", "100e3",
+                              Patterns::Double(0),
+                              "The extent of the Landlab grid in the x direction. Units: \\si{\\meter}.");
+            prm.declare_entry("Y extent", "100e3",
+                              Patterns::Double(0),
+                              "The extent of the Landlab grid in the y direction. Units: \\si{\\meter}.");
+            prm.declare_entry("Spacing", "1000",
+                              Patterns::Double(0),
+                              "The spacing of the Landlab grid. Units: \\si{\\meter}.");
+          }
           prm.leave_subsection();
         }
         prm.leave_subsection();
@@ -446,12 +446,12 @@ namespace aspect
           else
             AssertThrow(false, ExcMessage("The parameter 'Define LandLab parameters using years' must be set to 'true' or 'false'"));
 
-            prm.enter_subsection("Mesh information");
-              {
-                landlab_x_extent = prm.get_double("X extent");
-                landlab_y_extent = prm.get_double("Y extent");
-                landlab_spacing = prm.get_double("Spacing");
-              }
+          prm.enter_subsection("Mesh information");
+          {
+            landlab_x_extent = prm.get_double("X extent");
+            landlab_y_extent = prm.get_double("Y extent");
+            landlab_spacing = prm.get_double("Spacing");
+          }
           prm.leave_subsection();
         }
         prm.leave_subsection ();

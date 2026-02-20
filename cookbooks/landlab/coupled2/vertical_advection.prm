@@ -1,15 +1,13 @@
 # This parameter file sets up a model to test the interfacing between
-# the surface processes code LandLab and ASPECT. The model begins with
-# an initial triangular topography that erodes according to Hillslope
-# diffusion over 1 Myr. An analytical solution for this problem exsists
-# via Fourier Transforms, allowing us to quantify how well the interface
-# is performing. We can also compare this to the ASPECT/FastScape interface 
-# to check that both surface processes codes are giving the same answer.
+# the surface processes code LandLab and ASPECT. The model prescribes
+# uniform uplift within the ASPECT model (1 cm/yr), which is then used
+# to uplift the LandLab model. The LandLab model erodes the topography
+# using Hillslope Diffusion and Stream power.
 set Dimension                              = 3
 
 
 set Use years instead of seconds           = true
-set End time                               = 1e6
+set End time                               = 2e6
 set Maximum time step                      = 10e3
 
 
