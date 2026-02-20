@@ -264,7 +264,7 @@ namespace aspect
 
           const ArrayView<const double> data = PythonHelper::numpy_to_array_view(pValue);
           for (size_t i=0; i<data.size(); ++i)
-            velocities[i][dim-1] = data[i];
+            velocities[i][dim-1] = data[i] / (this->get_timestep() > 0.0 ? this->get_timestep() : 1.0);
 
           Py_DECREF(pValue);
         }
