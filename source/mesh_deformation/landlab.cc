@@ -126,7 +126,6 @@ namespace aspect
     void
     Landlab<dim>::update ()
     {
-
 #ifdef ASPECT_WITH_PYTHON
       if (!this->remote_point_evaluator)
         {
@@ -176,23 +175,26 @@ namespace aspect
           }
 
           {
-            // get grid points from the landlab mesh:
-            PyObject *pArgs = PyTuple_Pack(1, PyLong_FromLong(-1L));
-            PyObject *pgrid_x = call_python_function(pModule, "get_grid_x", pArgs);
-            Py_DECREF(pArgs);
+            // get grid:
+            PyObject *pDict = PyDict_New();
+            PyDict_SetItemString(pDict, "MPI Process", PyLong_FromLong(1.0));
+            PyDict_SetItemString(pDict, "ASPECT Dimension", PyLong_FromLong(dim));
 
+            PyObject *pArgs = PyTuple_Pack(1,
+                                           pDict
+                                          );
+            Py_DECREF(pDict);
+            PyObject *pgrid_x = call_python_function(pModule, "get_grid_x", pArgs);
             PyObject *pgrid_y = nullptr;
             if (dim == 3)
-              {
-                PyObject *pArgs = PyTuple_Pack(1, PyLong_FromLong(-1L));
                 pgrid_y = call_python_function(pModule, "get_grid_y", pArgs);
-                Py_DECREF(pArgs);
-              }
+            Py_DECREF(pArgs);
 
             const ArrayView<double> data_x = PythonHelper::numpy_to_array_view(pgrid_x);
             const ArrayView<double> data_y = (dim == 3)
                                              ? PythonHelper::numpy_to_array_view(pgrid_y)
                                              : ArrayView<double>(nullptr, 0);
+
             if (dim == 3)
               AssertThrow(data_x.size() == data_y.size(), ExcMessage("get_grid_x and get_grid_y returned different sizes"));
 
@@ -209,7 +211,7 @@ namespace aspect
 
             // Clean up Python objects
             Py_DECREF(pgrid_x);
-            if (pgrid_y)
+            if (dim == 3)
               Py_DECREF(pgrid_y);
 
             this->set_evaluation_points(surface_points);
@@ -225,6 +227,7 @@ namespace aspect
     Landlab<dim>::compute_updated_velocities_at_points (const std::vector<std::vector<double>> &current_solution_at_points) const
     {
 #ifdef ASPECT_WITH_PYTHON
+
       Assert(current_solution_at_points.size() == this->evaluation_points.size(), ExcInternalError());
       std::vector<Tensor<1,dim>> velocities(current_solution_at_points.size(), Tensor<1,dim>());
 
@@ -237,7 +240,6 @@ namespace aspect
           // Create a vector<vector> that is of the shape (n_variables, n_points)
           std::vector<std::vector<double>> variable_data(variable_names.size(),  std::vector<double>(current_solution_at_points.size(), 0.0));
 
-          // Fill variable_data (which corresponds to the LandLab nodal points) with the values from ASPECT.
           for (unsigned int i=0; i<variable_names.size(); ++i)
             {
               for (unsigned int j=0; j<current_solution_at_points.size(); ++j)
@@ -251,8 +253,8 @@ namespace aspect
               PyDict_SetItemString(pDict, variable_names[i].c_str(), pValue.get());
             }
 
-          // Call update_until(). update_until() returns deposition_erosion. This is what eventually
-          // gets converted to velocities to deform the ASPECT mesh.
+          // Call update_until(). update_until() returns the change in the LandLab topography,
+          // which eventually gets converted to a velocity that deforms the ASPECT surface.
           PyObject *pArgs = PyTuple_Pack(2, PyFloat_FromDouble(this->get_time()), pDict);
           PyObject *pValue = call_python_function(pModule, "update_until", pArgs);
           Py_DECREF(pDict);
@@ -260,7 +262,9 @@ namespace aspect
 
           const ArrayView<const double> data = PythonHelper::numpy_to_array_view(pValue);
           for (size_t i=0; i<data.size(); ++i)
-            velocities[i][dim-1] = data[i] / (this->get_timestep() > 0.0 ? this->get_timestep() : 1.0);
+            {
+              velocities[i][dim-1] = data[i] / (this->get_timestep() > 0.0 ? this->get_timestep() : 1.0);
+            }
 
           Py_DECREF(pValue);
         }
@@ -320,7 +324,14 @@ namespace aspect
           Tensor<1,dim> topography_direction;
           topography_direction[dim-1] = 1.0;
 
-          PyObject *pArgs = PyTuple_Pack(1, PyLong_FromLong(-1L));
+          PyObject *pDict = PyDict_New();
+          PyDict_SetItemString(pDict, "MPI Process", PyLong_FromLong(1.0));
+          PyDict_SetItemString(pDict, "ASPECT Dimension", PyLong_FromLong(dim));
+
+          PyObject *pArgs = PyTuple_Pack(1,
+                                          pDict
+                                        );
+          Py_DECREF(pDict);
           PyObject *pValue = call_python_function(pModule, "get_initial_topography", pArgs);
           Py_DECREF(pArgs);
           ArrayView<double> data = PythonHelper::numpy_to_array_view(pValue);
@@ -330,6 +341,7 @@ namespace aspect
         }
 
       // 2. Interpolate deformation into a DoF vector:
+
       LinearAlgebra::Vector initial_deformation_dof_vector = this->interpolate_external_velocities_to_surface_support_points(initial_deformation);
       const DoFHandler<dim> &mesh_dof_handler = this->get_mesh_deformation_handler().get_mesh_deformation_dof_handler();
       const IndexSet mesh_locally_relevant = DoFTools::extract_locally_relevant_dofs (mesh_dof_handler);

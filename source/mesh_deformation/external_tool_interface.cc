@@ -42,8 +42,9 @@ namespace aspect
                                              AffineConstraints<double> &mesh_velocity_constraints,
                                              const std::set<types::boundary_id> &boundary_ids) const
     {
-      // First compute a (global) vector that has the correct velocities
-      // set at all boundary nodes:
+      // First compute a (global) vector that has the correct velocities set at all boundary nodes.
+      // This takes the points on the LandLab mesh (which are the evaluation points) and interpolates
+      // the solution from ASPECT onto these evaluation points.
       const std::vector<std::vector<double>> aspect_surface_velocities = evaluate_aspect_variables_at_points();
 
       const std::vector<Tensor<1,dim>> external_surface_velocities
