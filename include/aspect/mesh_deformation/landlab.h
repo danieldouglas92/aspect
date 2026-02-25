@@ -117,6 +117,8 @@ namespace aspect
         double hillslope_diffusion_coefficient;
         double stream_power_erodibility_coefficient;
         bool parameters_in_years;
+
+        bool is_spherical;
 #ifdef ASPECT_WITH_PYTHON
         /**
          * The Python module object.
