@@ -365,6 +365,11 @@ namespace aspect
       triangulation.save (checkpoint_path + "mesh");
     }
 
+    // Rename the last checkpoint id to the checkpoint id that is about to be written.
+    // This will make the index of the checkpoint available to other plugins within ASPECT
+    // for synchronized checkpointing.
+    last_checkpoint_id = checkpoint_id;
+
     // save general information This calls the serialization functions on all
     // processes (so that they can take additional action, if necessary, see
     // the manual) but only writes to the restart file on process 0
@@ -441,7 +446,6 @@ namespace aspect
     // can be slow, and the model might be cancelled during writing.
     // This way restart remains usable even if restart.new is not completely
     // written.
-    last_checkpoint_id = checkpoint_id;
     if (my_id == 0)
       {
         write_checkpoint_metadata(checkpoint_path, time, timestep_number);
