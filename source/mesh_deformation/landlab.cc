@@ -32,6 +32,8 @@
 #include <aspect/geometry_model/spherical_shell.h>
 #include <deal.II/base/array_view.h>
 
+#include <fstream>
+
 #include <cfenv>
 
 #include <aspect/python_helper.h>
@@ -117,6 +119,17 @@ namespace aspect
           if (PyErr_Occurred())
             PyErr_Print();
           AssertThrow(pModule, ExcMessage("Failed to load Python module"));
+
+          // Copy the landlab script to the output directory for reproducibility.
+          const std::string module_filename = (script_path.empty() ? "" : script_path + "/") + script_module_name + ".py";
+          std::ifstream python_source(module_filename, std::ios::binary);
+
+          const std::string copied_module_filename = this->get_output_directory() + "original_landlab.py";
+          std::ofstream python_copy(copied_module_filename, std::ios::binary);
+          AssertThrow(python_copy,
+                      ExcMessage("Failed to open destination file for writing: " + copied_module_filename));
+
+          python_copy << python_source.rdbuf();
 
           // Call Python initialize() function with communicator handle
           PyObject *pArgs;
