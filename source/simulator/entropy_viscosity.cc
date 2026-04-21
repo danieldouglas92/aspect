@@ -21,8 +21,6 @@
 #include <aspect/simulator.h>
 #include <aspect/simulator/assemblers/interface.h>
 #include <aspect/melt.h>
-#include <aspect/gravity_model/interface.h>
-#include <aspect/simulator_access.h>
 
 #include <deal.II/base/signaling_nan.h>
 #include <deal.II/fe/fe_values.h>
