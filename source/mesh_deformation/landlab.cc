@@ -108,6 +108,7 @@ namespace aspect
           PyRun_SimpleString("import sys");
           PyRun_SimpleString("sys.path.append(\"" ASPECT_SOURCE_DIR "/tests\")");
           PyRun_SimpleString("sys.path.append(\".\")");
+          PyRun_SimpleString("sys.path.append(\"" ASPECT_SOURCE_DIR "/contrib/python/scripts\")");
 
           // avoid floating point exceptions in Landlab Python code:
 #ifdef ASPECT_USE_FP_EXCEPTIONS
@@ -177,7 +178,7 @@ namespace aspect
 
           {
             // get grid:
-            PyObject *pArgs = PyTuple_Pack(1, PyLong_FromLong(-1L));
+            PyObject *pArgs = PyTuple_Pack(1, PyLong_FromLong(dim));
             PyObject *pgrid_x = call_python_function(pModule, "get_grid_x", pArgs);
 
             PyObject *pgrid_y = nullptr;
@@ -269,7 +270,7 @@ namespace aspect
             }
 
           // Call update_until()
-          PyObject *pArgs = PyTuple_Pack(2, PyFloat_FromDouble(this->get_time()), pDict);
+          PyObject *pArgs = PyTuple_Pack(3, PyFloat_FromDouble(this->get_time()), PyLong_FromLong(dim), pDict);
           PyObject *pValue = call_python_function(pModule, "update_until", pArgs);
           Py_DECREF(pDict);
           Py_DECREF(pArgs);
@@ -344,13 +345,7 @@ namespace aspect
       std::vector<Tensor<1,dim>> initial_deformation(this->evaluation_points.size(), Tensor<1,dim>());
       if (this_rank_runs_landlab)
         {
-          PyObject *pDict = PyDict_New();
-          PyDict_SetItemString(pDict, "ASPECT Dimension", PyLong_FromLong(dim));
-
-          PyObject *pArgs = PyTuple_Pack(1,
-                                         pDict
-                                        );
-          Py_DECREF(pDict);
+          PyObject *pArgs = PyTuple_Pack(1, PyLong_FromLong(dim));
           PyObject *pValue = call_python_function(pModule, "get_initial_topography", pArgs);
           Py_DECREF(pArgs);
           ArrayView<double> data = PythonHelper::numpy_to_array_view(pValue);
