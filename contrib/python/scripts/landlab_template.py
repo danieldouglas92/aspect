@@ -19,7 +19,7 @@ class LandLabTemplate:
     """Template class for LandLab scripts used in ASPECT-Landlab coupling."""
 
     # Functions that actually get called within ASPECT. These functions are checked to ensure
-    # that the signatures of these function are not modified when instantiating this class.
+    # that their signatures are not modified when instantiating this class.
     _signature_checked_methods = (
         "initialize",
         "finalize",
@@ -65,7 +65,6 @@ class LandLabTemplate:
 
         self.horizontal_velocity         = None
         self.horizontal_surface_advector = None
-
 
         self.s2yr = 60 * 60 * 24 * 365.25
         self.timestep = 0
@@ -151,23 +150,46 @@ class LandLabTemplate:
     # ---------------------------------------------------------------------------
     # The rest of these functions likely will not require any modification.
     # ---------------------------------------------------------------------------
-    def determine_uplift_velocity(self, ASPECT_dim, dict_variable_name_to_value_in_nodes):
-        """Determine uplift velocity from ASPECT variables."""
+    def determine_uplift_velocity(self, ASPECT_dim, ASPECT_fields_at_Landlab_nodes_dict):
+        """
+        Determine uplift velocity of the Landlab mesh using the ASPECT velocity. In 3D, the vertical velocity is directly obtained 
+        from the z-velocity calculated in ASPECT. In 2D, the vertical velocity is obtained by projecting the y-velocity from the 
+        ASPECT surface (which is expected to be located at y=0 on the Landlab mesh) to all nodes on the Landlab mesh.
+
+        For a 2D ASPECT model, the coupling currently only supports structured Landlab grids. The velocity from ASPECT is projected
+        across the Landlab grid such that the values from ASPECT are fixed along a given x-value on the Landlab grid.
+
+        Parameters:
+        - ASPECT_dim: the dimension of the ASPECT model (2 or 3).
+        - ASPECT_fields_at_Landlab_nodes_dict: a dictionary mapping ASPECT variables to values at each node on the Landlab mesh.
+        """
         if ASPECT_dim == 2:
-            slice_y_velocity = dict_variable_name_to_value_in_nodes["y velocity"]
+            slice_y_velocity = ASPECT_fields_at_Landlab_nodes_dict["y velocity"]
 
             vertical_velocity = np.zeros(self.model_grid.number_of_nodes)
             unique_x_values = np.unique(self.model_grid.x_of_node)
             for x in unique_x_values:
                 vertical_velocity[self.model_grid.x_of_node == x] = slice_y_velocity[unique_x_values == x]
+
         elif ASPECT_dim == 3:
-            vertical_velocity = dict_variable_name_to_value_in_nodes["z velocity"]
+            vertical_velocity = ASPECT_fields_at_Landlab_nodes_dict["z velocity"]
 
         return vertical_velocity
     
-    def determine_horizontal_velocity(self, ASPECT_dim, dict_variable_name_to_value_in_nodes):
-        """Determine horizontal velocity from ASPECT variables."""
-        x_velocity = dict_variable_name_to_value_in_nodes["x velocity"]
+    def determine_horizontal_velocity(self, ASPECT_dim, ASPECT_fields_at_Landlab_nodes_dict):
+        """
+        Determine horizontal velocity from ASPECT variables. In 3D, the horizontal velocity is obtained by directly projecting the 
+        x and y velocity from ASPECT to the links of the Landlab mesh. In 2D, the horizontal velocity is obtained by projecting the 
+        x velocity from ASPECT to the links of the Landlab mesh and setting the y velocity to zero.
+
+        For a 2D ASPECT model, the coupling currently only supports structured Landlab grids. The velocity from ASPECT is projected
+        across the Landlab grid such that the values from ASPECT are fixed along a given x-value on the Landlab grid.
+
+        Parameters:
+        - ASPECT_dim: the dimension of the ASPECT model (2 or 3).
+        - ASPECT_fields_at_Landlab_nodes_dict: a dictionary mapping ASPECT variables to values at each node on the Landlab mesh.
+        """
+        x_velocity = ASPECT_fields_at_Landlab_nodes_dict["x velocity"]
 
         if ASPECT_dim == 2:
             projected_x_velocity = np.zeros(self.model_grid.number_of_nodes)
@@ -179,10 +201,10 @@ class LandLabTemplate:
             y_vel_at_links = self.model_grid.map_mean_of_link_nodes_to_link(np.zeros(self.model_grid.number_of_nodes)) # y velocity is zero since the ASPECT model is 2D.
 
         elif ASPECT_dim == 3:
-            y_velocity = dict_variable_name_to_value_in_nodes["y velocity"]
+            y_velocity = ASPECT_fields_at_Landlab_nodes_dict["y velocity"]
 
             x_vel_at_links = self.model_grid.map_mean_of_link_nodes_to_link(x_velocity)
-            y_vel_at_links = self.model_grid.map_mean_of_link_nodes_to_link(y_velocity) # y velocity is zero since the ASPECT model is 2D.
+            y_vel_at_links = self.model_grid.map_mean_of_link_nodes_to_link(y_velocity)
 
         self.horizontal_velocity[self.model_grid.horizontal_links] = x_vel_at_links[self.model_grid.horizontal_links]
         self.horizontal_velocity[self.model_grid.vertical_links]   = y_vel_at_links[self.model_grid.vertical_links]
@@ -190,6 +212,19 @@ class LandLabTemplate:
         return self.horizontal_velocity
 
     def dimensional_deposition_erosion(self, ASPECT_dim, deposition_erosion):
+        """
+        Calculate the change in the topography in a way that is consistent with the dimension expected by the ASPECT model.
+        In 3D, this function returns the change in topography at each node. In 2D, this function averages the change in 
+        topography across the y-direction and returns the change in topography along y=0, where the ASPECT surface is 
+        expected to be located.
+
+        For a 2D ASPECT model, the coupling currently only supports structured Landlab grids. The topography determined by
+        Landlab needs to be averaged across the x-direction so that it can be sent to ASPECT as a 1D array.
+        
+        Parameters:
+        - ASPECT_dim: the dimension of the ASPECT model (2 or 3).
+        - deposition_erosion: the change in topography at each node on the Landlab mesh
+        """
         if ASPECT_dim == 2:
             deposition_erosion_2d = np.zeros(len(np.unique(self.model_grid.x_of_node)))
             unique_x_values = np.unique(self.model_grid.x_of_node)
@@ -202,11 +237,20 @@ class LandLabTemplate:
             return deposition_erosion
 
     def checkpoint_model_grid(self):
+        """
+        Checkpoint the Landlab model grid by saving it to a file. This function is called when
+        checkpointing the ASPECT model.
+        """
+
         filename = "./landlab_model_grid_checkpoint.grid"
         save_grid(self.model_grid, filename, clobber=True)
         pass
 
     def load_model_grid(self):
+        """
+        Load the Landlab model grid from a file. This function is called when
+        restarting the ASPECT model from a checkpoint.
+        """
         filename = "./landlab_model_grid_checkpoint.grid"
         self.model_grid = load_grid(filename)
         self.elevation = self.model_grid.at_node["topographic__elevation"]
@@ -214,12 +258,31 @@ class LandLabTemplate:
         pass
 
     def get_initial_topography(self, ASPECT_dim):
+        """
+        Return the initial topography. In 3D, this function returns the initial topography at each node.
+        In 2D, this function returns the initial topography along y=0, where the ASPECT surface is expected to be located.
+
+        Parameters:
+        - ASPECT_dim: the dimension of the ASPECT model (2 or 3).
+        """
         if ASPECT_dim == 2:
             return self.elevation[self.model_grid.y_of_node == 0]
         elif ASPECT_dim == 3:
             return self.elevation
         
     def write_output(self, postprocess_dictionary):
+        """
+        Write output for visualizing the landlab mesh. This calls a function in the Landlab Python module to write output vtk files. 
+        This function is called at the end of each ASPECT timestep after the ASPECT model has been updated and the topography has been evolved.
+        The frequency of Landlab output can be controlled by modifying output_frequency.
+
+        Parameters:
+        - postprocess_dictionary: a dictionary containing information about the current ASPECT timestep, time, and output directory.
+          The dictionary contains the following entries:
+            - "ASPECT timestep": the current ASPECT timestep.
+            - "ASPECT time": the current ASPECT time.
+            - "ASPECT output directory": the directory where ASPECT output is being written.
+        """
         step = postprocess_dictionary["ASPECT timestep"]
         time = postprocess_dictionary["ASPECT time"]
         output_directory = postprocess_dictionary["ASPECT output directory"]
@@ -245,18 +308,49 @@ class LandLabTemplate:
         pass
 
     def get_grid_x(self, ASPECT_dim):
+        """
+        Return the x-coordinates of the grid nodes. In 2D, this function returns the unique x-coordinates.
+        In 3D, this function returns the x-coordinates of all nodes. 
+
+        For a 2D ASPECT model, the coupling currently only supports structured Landlab grids. In the case of
+        a 2D ASPECT model, the coupling assumes that the ASPECT model is located at y=0 on the Landlab mesh,
+        and that the Landlab mesh is structured. Therefore, we only need to extract the unique x-coordinates
+        of the Landlab mesh to interface with the ASPECT model.
+
+        
+        Parameters:
+        - ASPECT_dim: the dimension of the ASPECT model (2 or 3).
+        """
         if ASPECT_dim == 2:
             return np.unique(self.model_grid.x_of_node)
         elif ASPECT_dim == 3:
             return self.model_grid.x_of_node
     
     def get_grid_y(self, ASPECT_dim):
+        """
+        Return the y-coordinates of the grid nodes. In 2D, this function returns an array of zeros equal to 
+        the number of unique x-coordinates. In 3D, this function returns the y-coordinates of all nodes.
+
+        For a 2D ASPECT model, the coupling currently only supports structured Landlab grids. In the case of
+        a 2D ASPECT model, the coupling assumes that the ASPECT model is located at y=0 on the Landlab mesh,
+        and that the Landlab mesh is structured. Therefore, we need to send ASPECT an array of zeros that
+        match the length of the number of unique x-coordinates.
+        
+        Parameters:
+        - ASPECT_dim: the dimension of the ASPECT model (2 or 3).
+        """
         if ASPECT_dim == 2:
-            return np.unique(self.model_grid.y_of_node)
+            return np.zeros(np.unique(self.model_grid.x_of_node).size)
         elif ASPECT_dim == 3:
             return self.model_grid.y_of_node
         
     def get_grid_z(self, ASPECT_dim):
+        """
+        Return the z-coordinates of the grid nodes. This function is only applicable for 3D spherical ASPECT models.
+
+        Parameters:
+        - ASPECT_dim: the dimension of the ASPECT model (2 or 3).
+        """
         if ASPECT_dim == 3:
             return self.model_grid.z_of_node
         else:
