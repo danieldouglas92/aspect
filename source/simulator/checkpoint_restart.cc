@@ -365,16 +365,14 @@ namespace aspect
       triangulation.save (checkpoint_path + "mesh");
     }
 
-    // Rename the last checkpoint id to the checkpoint id that is about to be written.
-    // This will make the index of the checkpoint available to other plugins within ASPECT
-    // for synchronized checkpointing.
-    last_checkpoint_id = checkpoint_id;
-
     // save general information This calls the serialization functions on all
     // processes (so that they can take additional action, if necessary, see
     // the manual) but only writes to the restart file on process 0
     {
       std::ostringstream oss;
+
+      // Update the checkpoint ID to the current checkpoint ID.
+      last_checkpoint_id = checkpoint_id;
 
       // Serialize into a stringstream. Put the following into a code
       // block of its own to ensure the destruction of the 'oa'

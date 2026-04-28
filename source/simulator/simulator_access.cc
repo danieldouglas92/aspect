@@ -218,7 +218,7 @@ namespace aspect
 
   template <int dim>
   unsigned int
-  SimulatorAccess<dim>::get_last_checkpoint_id () const
+  SimulatorAccess<dim>::get_checkpoint_id () const
   {
     return simulator->last_checkpoint_id;
   }
