@@ -76,6 +76,7 @@ jobs:
       with:
         name: changes-astyle.diff
         path: changes-astyle.diff
+        archive: false
     - name: check indentation
       run: |
         git diff --exit-code
@@ -104,6 +105,7 @@ jobs:
       with:
         name: changes-parameters.diff
         path: doc/changes-parameters.diff
+        archive: false
     - name: check parameter documentation
       run: |
         git diff --exit-code
@@ -204,6 +206,7 @@ jobs:
       with:
         name: ${{ matrix.result-file }}
         path: build/${{ matrix.result-file }}
+        archive: false
     - name: check test results
       run: |
         if [ -f build/test_run_failed ] || [ -s build/${{ matrix.result-file}} ]; then
