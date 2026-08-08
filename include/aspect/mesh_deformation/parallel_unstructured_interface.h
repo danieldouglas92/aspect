@@ -143,6 +143,11 @@ namespace aspect
         set_evaluation_points (const std::vector<Point<dim>> &evaluation_points);
 
         /**
+         */
+        std::vector<std::string>
+        get_aspect_derived_quantity_names () const;
+
+        /**
          * Return the value of the ASPECT solution at the set of points
          * previously set via set_evaluation_points().
          *

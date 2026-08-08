@@ -88,6 +88,13 @@ namespace aspect
         }
     }
 
+    template <int dim>
+    std::vector<std::string>
+    ParallelUnstructuredInterface<dim>::
+    get_aspect_derived_quantity_names () const
+    {
+      return {"melt_extracted_to_surface"};
+    }
 
     template <int dim>
     void
