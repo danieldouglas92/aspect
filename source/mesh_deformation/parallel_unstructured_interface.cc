@@ -23,6 +23,7 @@
 #include <aspect/simulator_signals.h>
 #include <aspect/geometry_model/interface.h>
 #include <aspect/gravity_model/interface.h>
+#include <aspect/melt.h>
 
 #include <deal.II/dofs/dof_tools.h>
 #include <deal.II/numerics/vector_tools_evaluate.h>
@@ -340,97 +341,98 @@ namespace aspect
         evaluation_points.size(), std::vector<double>(n_derived_quantities, 0.0));
 
       bool porosity_exists = false;
-      unsigned int porosity_component = numbers::invalid_unsigned_int;
+      unsigned int porosity_index = numbers::invalid_unsigned_int;
       if (this->introspection().compositional_name_exists("porosity"))
         {
           porosity_exists = true;
-          const unsigned int porosity_index = this->introspection().compositional_index_for_name("porosity");
-          porosity_component = this->introspection().component_indices.compositional_fields[porosity_index];
+          porosity_index = this->introspection().compositional_index_for_name("porosity");
         }
+
+
+
+      const QIterated<dim> quadrature_formula (QTrapezoid<1>(),
+                                               this->get_parameters().stokes_velocity_degree);
+      const unsigned int n_q_points = quadrature_formula.size();
+
+      const UpdateFlags update_flags
+        = UpdateFlags(
+            update_values |
+            update_gradients |
+            update_quadrature_points |
+            update_JxW_values);
+
+      FEValues<dim> fe_values (this->get_mapping(),
+                               this->get_fe(),
+                               quadrature_formula,
+                               update_flags);
+
+      MaterialModel::MaterialModelInputs<dim> in(fe_values.n_quadrature_points, this->n_compositional_fields());
+      MaterialModel::MaterialModelOutputs<dim> out(fe_values.n_quadrature_points, this->n_compositional_fields());
+      MeltHandler<dim>::create_material_model_outputs(out);
+
+
+
+
+      // THIS WILL WORK IF I JUST HARD CODE IN THE SPACING OF THE LANDLAB MESH. THE THING THAT I WILL NEED TO MODIFY
+      // IS HOW TO ACCOUNT FOR THE LANDLAB MESH BEING HIGHER RESOLUTION THAN THE ASPECT MESH. WHAT I HAVE RIGHT NOW
+      // ASSUMES THAT THE SURFACE MESH IS AS COARSE AS THE ASPECT MESH.
+      const double maximum_resolution = 1000.0;
+      std::pair<double, double> spacings = {1000.0, 1000.0};
+
+
+
 
       const double extraction_depth = melt_extractor_extraction_depth;
 
-      if (porosity_exists && !evaluation_points.empty())
-        {
-          // Sample porosity along the column from the surface down to extraction depth.
-          const unsigned int n_depth_samples = 100;
-          const double depth_step = extraction_depth / static_cast<double>(n_depth_samples);
-
-          std::vector<Point<dim>> depth_points(evaluation_points.size() * n_depth_samples);
-          for (unsigned int i=0; i<evaluation_points.size(); ++i)
-            {
-              const Tensor<1,dim> gravity = this->get_gravity_model().gravity_vector(evaluation_points[i]);
-              Tensor<1,dim> vertical_direction;
-              if (gravity.norm() > 0.0)
-                vertical_direction = -gravity / gravity.norm();
-
-              for (unsigned int k=0; k<n_depth_samples; ++k)
-                {
-                  const double sample_depth = (k + 0.5) * depth_step;
-                  depth_points[i*n_depth_samples + k] = evaluation_points[i] - vertical_direction * sample_depth;
-                }
-            }
-
-          static MappingQ<dim> sampling_mapping(this->get_geometry_model().has_curved_elements() ? 4 : 1);
-          Utilities::MPI::RemotePointEvaluation<dim, dim> sampling_point_evaluator;
-          sampling_point_evaluator.reinit(depth_points, this->get_triangulation(), sampling_mapping);
-
-          // Record owning cell volume for each sample point. This allows us to
-          // compute porosity integrated over cell volume (instead of depth only).
-          std::vector<double> sample_cell_volumes(depth_points.size(), 0.0);
+      this->get_material_model().create_additional_named_outputs(out);
+      if (porosity_exists)
+        for (unsigned int p = 0; p < evaluation_points.size(); ++p)
           {
-            const unsigned int n_components = 1;
-            std::vector<unsigned int> sample_indices(depth_points.size());
-            for (unsigned int i=0; i<depth_points.size(); ++i)
-              sample_indices[i] = i;
+            for (const auto &cell : this->get_dof_handler().active_cell_iterators())
+              {
+                // Check to see if the center of the cell is shallower than the extraction depth + the
+                // maximum resolution. This allows us to more quickly discard the bulk majority of cells
+                // within the model that will be deeper than the extraction depth. The maximum resolution
+                // is added because the center of the cell could be below the extraction depth, but quadrature
+                // points in the top of the cell could still be shallower than the extraction depth.
+                if (this->get_geometry_model().depth(cell->center()) < (extraction_depth + maximum_resolution)
+                    &&
+                    cell->is_locally_owned())
+                  {
+                    fe_values.reinit (cell);
+                    in.reinit(fe_values, cell, this->introspection(), this->get_solution());
+                    this->get_material_model().evaluate(in, out);
 
-            const auto sample_cell_data = [&](const ArrayView<const unsigned int> &values,
-                                              const typename Utilities::MPI::RemotePointEvaluation<dim>::CellData &cell_data)
-            {
-              for (const auto cell_index : cell_data.cell_indices())
-                {
-                  const auto cell = cell_data.get_active_cell_iterator(cell_index);
-                  const double cell_volume = cell->measure();
+                    std::shared_ptr<MaterialModel::ReactionRateOutputs<dim>> reaction_rate_out
+                      = out.template get_additional_output_object<MaterialModel::ReactionRateOutputs<dim>>();
 
-                  const ArrayView<const unsigned int> local_values(
-                    values.data() + n_components*cell_data.reference_point_ptrs[cell_index],
-                    n_components*(cell_data.reference_point_ptrs[cell_index + 1] -
-                                  cell_data.reference_point_ptrs[cell_index]));
+                    if (reaction_rate_out != nullptr)
+                      for (unsigned int q = 0; q < n_q_points; ++q)
+                        {
+                          // Check that the current quadrature point is shallower than the extraction depth
+                          if (this->get_geometry_model().depth(fe_values.quadrature_point(q)) > extraction_depth)
+                            continue;
 
-                  const ArrayView<const Point<dim>> unit_points = cell_data.get_unit_points(cell_index);
-                  for (unsigned int i=0; i<unit_points.size(); ++i)
-                    {
-                      const unsigned int sample_index = local_values[n_components*i];
-                      sample_cell_volumes[sample_index] = cell_volume;
-                    }
-                }
-            };
+                          // Check to see if the current quadrature point is within some range of the current surface point.
+                          const double distance = dim == 2 ? std::abs(fe_values.quadrature_point(q)[0] - evaluation_points[p][0])
+                                                  : std::sqrt(Utilities::fixed_power<2>(fe_values.quadrature_point(q)[0] - evaluation_points[p][0]) +
+                                                              Utilities::fixed_power<2>(fe_values.quadrature_point(q)[1] - evaluation_points[p][1]));
 
-            sampling_point_evaluator.template process_and_evaluate<unsigned int, n_components>(sample_indices,
-                                                                                                sample_cell_data,
-                                                                                                /*sort_data*/ true);
+                          // UPDATE FOR 3D CARTESIAN
+                          if (distance < spacings.first / 2)
+                            {
+                              const double timestep = this->get_timestep();
+                              // For my purposes, maybe I instead update this to be the REACTION TERMS instead of the
+                              // REACTION RATES.
+                              // const double extracted_volume = reaction_rate_out->reaction_rates[q][porosity_index] * fe_values.JxW(q) * timestep;
+                              const double extracted_volume = in.composition[q][porosity_index] * fe_values.JxW(q);
+
+                              derived_quantities_at_points[p][0] += extracted_volume;
+                            }
+                        }
+                  }
+              }
           }
-
-          const std::vector<double> sampled_porosity_values =
-            VectorTools::point_values<1>(sampling_point_evaluator,
-                                         this->get_dof_handler(),
-                                         this->get_solution(),
-                                         dealii::VectorTools::EvaluationFlags::avg,
-                                         porosity_component);
-
-          for (unsigned int i=0; i<evaluation_points.size(); ++i)
-            {
-
-              double extracted_melt_volume = 0.0;
-              
-              for (unsigned int k=0; k<n_depth_samples; ++k)
-                {
-                  const unsigned int index = i*n_depth_samples + k;
-                  extracted_melt_volume += std::max(0.0, sampled_porosity_values[index]) * sample_cell_volumes[index];
-                }
-              derived_quantities_at_points[i][0] = extracted_melt_volume;
-            }
-        }
       return derived_quantities_at_points;
     }
 
