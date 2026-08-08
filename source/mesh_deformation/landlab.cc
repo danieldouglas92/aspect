@@ -75,13 +75,6 @@ namespace aspect
   namespace MeshDeformation
   {
     template <int dim>
-    Landlab<dim>::Landlab()
-    {
-    }
-
-
-
-    template <int dim>
     void
     Landlab<dim>::initialize ()
     {
@@ -445,10 +438,6 @@ namespace aspect
           prm.declare_entry("Script name", "",
                             Patterns::Anything(),
                             "Name of the Python module to load (without .py extension).");
-          prm.declare_entry("Script argument", "",
-                            Patterns::Anything(),
-                            "An arbitrary string to be passed to the initialize() function in the "
-                            "Python script. Can be used to specify a configuration file or other option.");
 
         }
         prm.leave_subsection();
@@ -476,8 +465,6 @@ namespace aspect
 
           script_path = prm.get("Script path");
           script_module_name = prm.get("Script name");
-          script_argument = prm.get("Script argument");
-
         }
         prm.leave_subsection ();
       }
