@@ -342,8 +342,6 @@ namespace aspect
 
       const double extraction_depth = melt_extractor_extraction_depth;
 
-      std::cout << "THE EXTRACTION DEPTH USED TO SEND TO LANDLAB IS: " << extraction_depth << std::endl << std::endl;
-
       if (porosity_exists && !evaluation_points.empty())
         {
           // Sample porosity along the column from the surface down to extraction depth.

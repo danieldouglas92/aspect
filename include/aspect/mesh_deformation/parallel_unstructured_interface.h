@@ -229,6 +229,13 @@ namespace aspect
          * external velocities to each surface DoF from the closest evaluation point.
          */
         std::vector<DofToEvalPointData> map_dof_to_eval_point;
+
+        /**
+         * Extraction depth used for melt-related derived quantities.
+         * This value is synchronized from the melt extractor plugin parameters
+         * by derived classes that parse the input file.
+         */
+        double melt_extractor_extraction_depth = 7000.0;
     };
   }
 }
