@@ -153,6 +153,16 @@ namespace aspect
         evaluate_aspect_solution_at_points () const;
 
         /**
+         * Return the value of ASPECT derived quantities at the set of points
+         * previously set via set_evaluation_points().
+         *
+         * For each point, the return object contains a vector with as
+         * many components as there are ASPECT derived quantities.
+         */
+        std::vector<std::vector<double>>
+        evaluate_aspect_derived_quantities_at_points () const;
+
+        /**
          * Interpolate from velocities given in the evaluation points
          * to ASPECT velocities on the surface in form of a finite
          * element field.

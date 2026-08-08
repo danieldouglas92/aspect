@@ -313,6 +313,124 @@ namespace aspect
 
 
     template <int dim>
+    std::vector<std::vector<double>>
+    ParallelUnstructuredInterface<dim>::
+    evaluate_aspect_derived_quantities_at_points () const
+    {
+      Assert (remote_point_evaluator != nullptr,
+              ExcMessage("You can only call this function if you have previously "
+                         "set the evaluation points by calling set_evaluation_points(), "
+                         "and if the evaluator has not been invalidated by a mesh "
+                         "refinement step."));
+
+      // Compute derived quantities at each evaluation point:
+      // 1) Column-integrated extracted melt from the surface down to the
+      //    extraction depth, following the melt_extractor rule that all
+      //    porosity above the extraction depth is removed.
+      const unsigned int n_derived_quantities = 1;
+      std::vector<std::vector<double>> derived_quantities_at_points(
+        evaluation_points.size(), std::vector<double>(n_derived_quantities, 0.0));
+
+      bool porosity_exists = false;
+      unsigned int porosity_component = numbers::invalid_unsigned_int;
+      if (this->introspection().compositional_name_exists("porosity"))
+        {
+          porosity_exists = true;
+          const unsigned int porosity_index = this->introspection().compositional_index_for_name("porosity");
+          porosity_component = this->introspection().component_indices.compositional_fields[porosity_index];
+        }
+
+      const double extraction_depth = melt_extractor_extraction_depth;
+
+      std::cout << "THE EXTRACTION DEPTH USED TO SEND TO LANDLAB IS: " << extraction_depth << std::endl << std::endl;
+
+      if (porosity_exists && !evaluation_points.empty())
+        {
+          // Sample porosity along the column from the surface down to extraction depth.
+          const unsigned int n_depth_samples = 100;
+          const double depth_step = extraction_depth / static_cast<double>(n_depth_samples);
+
+          std::vector<Point<dim>> depth_points(evaluation_points.size() * n_depth_samples);
+          for (unsigned int i=0; i<evaluation_points.size(); ++i)
+            {
+              const Tensor<1,dim> gravity = this->get_gravity_model().gravity_vector(evaluation_points[i]);
+              Tensor<1,dim> vertical_direction;
+              if (gravity.norm() > 0.0)
+                vertical_direction = -gravity / gravity.norm();
+
+              for (unsigned int k=0; k<n_depth_samples; ++k)
+                {
+                  const double sample_depth = (k + 0.5) * depth_step;
+                  depth_points[i*n_depth_samples + k] = evaluation_points[i] - vertical_direction * sample_depth;
+                }
+            }
+
+          static MappingQ<dim> sampling_mapping(this->get_geometry_model().has_curved_elements() ? 4 : 1);
+          Utilities::MPI::RemotePointEvaluation<dim, dim> sampling_point_evaluator;
+          sampling_point_evaluator.reinit(depth_points, this->get_triangulation(), sampling_mapping);
+
+          // Record owning cell volume for each sample point. This allows us to
+          // compute porosity integrated over cell volume (instead of depth only).
+          std::vector<double> sample_cell_volumes(depth_points.size(), 0.0);
+          {
+            const unsigned int n_components = 1;
+            std::vector<unsigned int> sample_indices(depth_points.size());
+            for (unsigned int i=0; i<depth_points.size(); ++i)
+              sample_indices[i] = i;
+
+            const auto sample_cell_data = [&](const ArrayView<const unsigned int> &values,
+                                              const typename Utilities::MPI::RemotePointEvaluation<dim>::CellData &cell_data)
+            {
+              for (const auto cell_index : cell_data.cell_indices())
+                {
+                  const auto cell = cell_data.get_active_cell_iterator(cell_index);
+                  const double cell_volume = cell->measure();
+
+                  const ArrayView<const unsigned int> local_values(
+                    values.data() + n_components*cell_data.reference_point_ptrs[cell_index],
+                    n_components*(cell_data.reference_point_ptrs[cell_index + 1] -
+                                  cell_data.reference_point_ptrs[cell_index]));
+
+                  const ArrayView<const Point<dim>> unit_points = cell_data.get_unit_points(cell_index);
+                  for (unsigned int i=0; i<unit_points.size(); ++i)
+                    {
+                      const unsigned int sample_index = local_values[n_components*i];
+                      sample_cell_volumes[sample_index] = cell_volume;
+                    }
+                }
+            };
+
+            sampling_point_evaluator.template process_and_evaluate<unsigned int, n_components>(sample_indices,
+                                                                                                sample_cell_data,
+                                                                                                /*sort_data*/ true);
+          }
+
+          const std::vector<double> sampled_porosity_values =
+            VectorTools::point_values<1>(sampling_point_evaluator,
+                                         this->get_dof_handler(),
+                                         this->get_solution(),
+                                         dealii::VectorTools::EvaluationFlags::avg,
+                                         porosity_component);
+
+          for (unsigned int i=0; i<evaluation_points.size(); ++i)
+            {
+
+              double extracted_melt_volume = 0.0;
+              
+              for (unsigned int k=0; k<n_depth_samples; ++k)
+                {
+                  const unsigned int index = i*n_depth_samples + k;
+                  extracted_melt_volume += std::max(0.0, sampled_porosity_values[index]) * sample_cell_volumes[index];
+                }
+              derived_quantities_at_points[i][0] = extracted_melt_volume;
+            }
+        }
+      return derived_quantities_at_points;
+    }
+
+
+
+    template <int dim>
     LinearAlgebra::Vector
     ParallelUnstructuredInterface<dim>::
     interpolate_external_velocities_to_surface_support_points (const std::vector<Tensor<1,dim>> &velocities) const
