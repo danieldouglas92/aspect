@@ -376,8 +376,8 @@ namespace aspect
       // THIS WILL WORK IF I JUST HARD CODE IN THE SPACING OF THE LANDLAB MESH. THE THING THAT I WILL NEED TO MODIFY
       // IS HOW TO ACCOUNT FOR THE LANDLAB MESH BEING HIGHER RESOLUTION THAN THE ASPECT MESH. WHAT I HAVE RIGHT NOW
       // ASSUMES THAT THE SURFACE MESH IS AS COARSE AS THE ASPECT MESH.
-      const double maximum_resolution = 1000.0;
-      std::pair<double, double> spacings = {1000.0, 1000.0};
+      const double maximum_resolution = 5000.0;
+      std::pair<double, double> spacings = {5000.0, 5000.0};
 
 
 
@@ -385,7 +385,10 @@ namespace aspect
       const double extraction_depth = melt_extractor_extraction_depth;
 
       this->get_material_model().create_additional_named_outputs(out);
+
+      std::cout << "Porosity exists? " << porosity_exists << std::endl;
       if (porosity_exists)
+        std::cout << "Starting the loop......" << std::endl;
         for (unsigned int p = 0; p < evaluation_points.size(); ++p)
           {
             for (const auto &cell : this->get_dof_handler().active_cell_iterators())
@@ -421,7 +424,6 @@ namespace aspect
                           // UPDATE FOR 3D CARTESIAN
                           if (distance < spacings.first / 2)
                             {
-                              const double timestep = this->get_timestep();
                               // For my purposes, maybe I instead update this to be the REACTION TERMS instead of the
                               // REACTION RATES.
                               // const double extracted_volume = reaction_rate_out->reaction_rates[q][porosity_index] * fe_values.JxW(q) * timestep;
@@ -433,6 +435,7 @@ namespace aspect
                   }
               }
           }
+      std::cout << "Finished the loop......" << std::endl;
       return derived_quantities_at_points;
     }
 
