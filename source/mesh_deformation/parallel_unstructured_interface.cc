@@ -376,8 +376,8 @@ namespace aspect
       // THIS WILL WORK IF I JUST HARD CODE IN THE SPACING OF THE LANDLAB MESH. THE THING THAT I WILL NEED TO MODIFY
       // IS HOW TO ACCOUNT FOR THE LANDLAB MESH BEING HIGHER RESOLUTION THAN THE ASPECT MESH. WHAT I HAVE RIGHT NOW
       // ASSUMES THAT THE SURFACE MESH IS AS COARSE AS THE ASPECT MESH.
-      const double maximum_resolution = 5000.0;
-      std::pair<double, double> spacings = {5000.0, 5000.0};
+      const double maximum_resolution = 500.0;
+      std::pair<double, double> spacings = {500.0, 500.0};
 
 
 
