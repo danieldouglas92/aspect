@@ -224,7 +224,9 @@ namespace aspect
     Landlab<dim>::compute_updated_velocities_at_points (const std::vector<std::vector<double>> &current_solution_at_points) const
     {
       Assert(current_solution_at_points.size() == this->evaluation_points.size(), ExcInternalError());
-
+      const std::vector<std::vector<double>> derived_quantities_at_points = this->evaluate_aspect_derived_quantities_at_points();
+      AssertDimension(derived_quantities_at_points.size(), current_solution_at_points.size());
+      
       // Initialize the vector that will compute the velocities in ASPECT from the information
       // sent from Landlab.
       std::vector<Tensor<1,dim>> velocities(current_solution_at_points.size(), Tensor<1,dim>());
@@ -252,9 +254,14 @@ namespace aspect
           for (unsigned int c=0; c<this->n_compositional_fields(); ++c)
             variable_names.push_back(this->introspection().name_for_compositional_index(c));
 
+          const std::vector<std::string> derived_quantity_names = this->get_aspect_derived_quantity_names();
+          variable_names.insert(variable_names.end(),
+                                derived_quantity_names.begin(),
+                                derived_quantity_names.end());
           // Loop over all solution variables at each Landlab evaluation point and store the
           // ASPECT solution in a vector.
           std::vector<std::vector<double>> variable_data(variable_names.size(),  std::vector<double>(current_solution_at_points.size(), 0.0));
+          const unsigned int n_solution_variables = this->introspection().n_components;
           for (unsigned int i=0; i<variable_names.size(); ++i)
             {
               for (unsigned int j=0; j<current_solution_at_points.size(); ++j)
@@ -262,6 +269,15 @@ namespace aspect
                   variable_data[i][j] = current_solution_at_points[j][i];
                 }
             }
+
+          for (unsigned int i=0; i<derived_quantities_at_points[0].size(); ++i)
+            {
+              for (unsigned int j=0; j<derived_quantities_at_points.size(); ++j)
+                {
+                  variable_data[n_solution_variables + i][j] = derived_quantities_at_points[j][i];
+                }
+            }
+
           // Store the solution vector for each variable in a python dictionary to send to Landlab.
           for (unsigned int i=0; i<variable_names.size(); ++i)
             {
