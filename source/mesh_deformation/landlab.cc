@@ -441,6 +441,10 @@ namespace aspect
           prm.declare_entry("Script name", "",
                             Patterns::Anything(),
                             "Name of the Python module to load (without .py extension).");
+          prm.declare_entry("Melt extraction cutoff porosity", "1e-4",
+                            Patterns::Double(0),
+                            "Quadrature points with porosity below this value do not contribute "
+                            "to the column-integrated melt volume sent to the surface process model.");
         }
         prm.leave_subsection();
       }
@@ -463,6 +467,7 @@ namespace aspect
 
           script_path        = prm.get("Script path");
           script_module_name = prm.get("Script name");
+          this->cutoff_porosity = prm.get_double("Melt extraction cutoff porosity");
         }
         prm.leave_subsection ();
       }

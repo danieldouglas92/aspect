@@ -241,6 +241,12 @@ namespace aspect
          * by derived classes that parse the input file.
          */
         double melt_extractor_extraction_depth = 7000.0;
+
+        /**
+         * Minimum porosity threshold below which a quadrature point does not
+         * contribute to the column-integrated melt volume.
+         */
+        double cutoff_porosity = 1e-4;
     };
   }
 }

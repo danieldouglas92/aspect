@@ -397,7 +397,6 @@ namespace aspect
       this->get_material_model().create_additional_named_outputs(out);
       if (porosity_exists)
         {
-          const double cutoff_porosity = 1e-4;
           for (const auto &cell : this->get_dof_handler().active_cell_iterators())
             {
               if (this->get_geometry_model().depth(cell->center()) >= (extraction_depth + maximum_resolution)
@@ -407,6 +406,10 @@ namespace aspect
               fe_values.reinit(cell);
               in.reinit(fe_values, cell, this->introspection(), this->get_solution());
               this->get_material_model().evaluate(in, out);
+
+              auto reaction_rate_out = out.template get_additional_output_object<MaterialModel::ReactionRateOutputs<dim>>();
+              if (reaction_rate_out == nullptr)
+                continue;
 
               for (unsigned int q = 0; q < n_q_points; ++q)
                 {
@@ -420,7 +423,9 @@ namespace aspect
                                                           Utilities::fixed_power<2>(fe_values.quadrature_point(q)[1] - all_evaluation_points[p][1]));
                       if (distance < maximum_resolution / 2.)
                         {
-                          derived_quantities_at_points[p][0] += in.composition[q][porosity_index] > cutoff_porosity ? in.composition[q][porosity_index] * fe_values.JxW(q) : 0.0;
+                          // derived_quantities_at_points[p][0] += in.composition[q][porosity_index] > cutoff_porosity ? in.composition[q][porosity_index] * fe_values.JxW(q) : 0.0;
+                          const double reaction_rate = reaction_rate_out->reaction_rates[q][porosity_index];
+                          derived_quantities_at_points[p][0] += -reaction_rate * fe_values.JxW(q) * this->get_timestep();
                           break;
                         }
                     }

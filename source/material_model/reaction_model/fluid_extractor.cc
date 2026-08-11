@@ -77,6 +77,8 @@ namespace aspect
         else
           AssertThrow(false, ExcMessage("The reaction scheme " + reaction_scheme_name + " is not recognized as a valid reaction scheme for extracting fluids."));
 
+        const double timestep = this->get_timestep();
+
         for (unsigned int i=0; i < in.n_evaluation_points(); ++i)
           {
             if (reaction_rate_out != nullptr && in.requests_property(MaterialProperties::reaction_rates))
@@ -99,7 +101,7 @@ namespace aspect
 
                     // Prevent negative porosity from developing
                     porosity_change = std::max(-porosity, porosity_change);
-                    reaction_rate_out->reaction_rates[i][porosity_index] = porosity_change / (10.0 * year_in_seconds);
+                    reaction_rate_out->reaction_rates[i][porosity_index] = std::min(porosity_change, 0.0) / timestep;
 
                     // Set the reaction rates for the compositional field that reacts with the fluid to be 0. This is to prevent the "porosity" from being extracted while
                     // simultaneously reacting with the solid phase. Do not override the reaction rate if it is negative, because we still want to allow the solid phase
