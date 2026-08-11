@@ -378,8 +378,6 @@ namespace aspect
           for (unsigned int d = 0; d < dim; ++d)
             maximum_resolution = std::max(maximum_resolution, cell->extent_in_direction(d));
         }
-      std::pair<double, double> spacings = {maximum_resolution, maximum_resolution};
-
 
 
 
@@ -413,10 +411,10 @@ namespace aspect
                       const double distance = dim == 2 ? std::abs(fe_values.quadrature_point(q)[0] - evaluation_points[p][0])
                                               : std::sqrt(Utilities::fixed_power<2>(fe_values.quadrature_point(q)[0] - evaluation_points[p][0]) +
                                                           Utilities::fixed_power<2>(fe_values.quadrature_point(q)[1] - evaluation_points[p][1]));
-                      if (distance < spacings.first / 2)
+                      if (distance < maximum_resolution / 2.)
                         {
                           derived_quantities_at_points[p][0] += in.composition[q][porosity_index] * fe_values.JxW(q);
-                          break;
+                          // break;
                         }
                     }
                 }
