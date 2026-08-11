@@ -384,25 +384,20 @@ namespace aspect
       MaterialModel::MaterialModelOutputs<dim> out(fe_values.n_quadrature_points, this->n_compositional_fields());
       MeltHandler<dim>::create_material_model_outputs(out);
 
-
-
-
+      const double extraction_depth = melt_extractor_extraction_depth;
 
       double maximum_resolution = -std::numeric_limits<double>::max();
       for (const auto &cell : this->get_triangulation().active_cell_iterators())
         {
-          for (unsigned int d = 0; d < dim; ++d)
-            maximum_resolution = std::max(maximum_resolution, cell->extent_in_direction(d));
+          if (this->get_geometry_model().depth(cell->center()) >= extraction_depth)
+            for (unsigned int d = 0; d < dim; ++d)
+              maximum_resolution = std::max(maximum_resolution, cell->extent_in_direction(d));
         }
 
-
-
-      const double extraction_depth = melt_extractor_extraction_depth;
-
       this->get_material_model().create_additional_named_outputs(out);
-
       if (porosity_exists)
         {
+          const double cutoff_porosity = 1e-4;
           for (const auto &cell : this->get_dof_handler().active_cell_iterators())
             {
               if (this->get_geometry_model().depth(cell->center()) >= (extraction_depth + maximum_resolution)
@@ -425,7 +420,7 @@ namespace aspect
                                                           Utilities::fixed_power<2>(fe_values.quadrature_point(q)[1] - all_evaluation_points[p][1]));
                       if (distance < maximum_resolution / 2.)
                         {
-                          derived_quantities_at_points[p][0] += in.composition[q][porosity_index] * fe_values.JxW(q);
+                          derived_quantities_at_points[p][0] += in.composition[q][porosity_index] > cutoff_porosity ? in.composition[q][porosity_index] * fe_values.JxW(q) : 0.0;
                           break;
                         }
                     }
