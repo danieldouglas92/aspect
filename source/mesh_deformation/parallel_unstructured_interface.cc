@@ -348,8 +348,6 @@ namespace aspect
           porosity_index = this->introspection().compositional_index_for_name("porosity");
         }
 
-
-
       const QIterated<dim> quadrature_formula (QTrapezoid<1>(),
                                                this->get_parameters().stokes_velocity_degree);
       const unsigned int n_q_points = quadrature_formula.size();
@@ -373,11 +371,14 @@ namespace aspect
 
 
 
-      // THIS WILL WORK IF I JUST HARD CODE IN THE SPACING OF THE LANDLAB MESH. THE THING THAT I WILL NEED TO MODIFY
-      // IS HOW TO ACCOUNT FOR THE LANDLAB MESH BEING HIGHER RESOLUTION THAN THE ASPECT MESH. WHAT I HAVE RIGHT NOW
-      // ASSUMES THAT THE SURFACE MESH IS AS COARSE AS THE ASPECT MESH.
-      const double maximum_resolution = 500.0;
-      std::pair<double, double> spacings = {500.0, 500.0};
+
+      double maximum_resolution = -std::numeric_limits<double>::max();
+      for (const auto &cell : this->get_triangulation().active_cell_iterators())
+        {
+          for (unsigned int d = 0; d < dim; ++d)
+            maximum_resolution = std::max(maximum_resolution, cell->extent_in_direction(d));
+        }
+      std::pair<double, double> spacings = {maximum_resolution, maximum_resolution};
 
 
 
@@ -386,60 +387,45 @@ namespace aspect
 
       this->get_material_model().create_additional_named_outputs(out);
 
-      std::cout << "Porosity exists? " << porosity_exists << std::endl;
       if (porosity_exists)
-        std::cout << "Starting the loop......" << std::endl;
-        for (unsigned int p = 0; p < evaluation_points.size(); ++p)
-          {
-            for (const auto &cell : this->get_dof_handler().active_cell_iterators())
-              {
-                // Check to see if the center of the cell is shallower than the extraction depth + the
-                // maximum resolution. This allows us to more quickly discard the bulk majority of cells
-                // within the model that will be deeper than the extraction depth. The maximum resolution
-                // is added because the center of the cell could be below the extraction depth, but quadrature
-                // points in the top of the cell could still be shallower than the extraction depth.
-                if (this->get_geometry_model().depth(cell->center()) < (extraction_depth + maximum_resolution)
-                    &&
-                    cell->is_locally_owned())
-                  {
-                    fe_values.reinit (cell);
-                    in.reinit(fe_values, cell, this->introspection(), this->get_solution());
-                    this->get_material_model().evaluate(in, out);
+        {
+          for (const auto &cell : this->get_dof_handler().active_cell_iterators())
+            {
+              if (this->get_geometry_model().depth(cell->center()) >= (extraction_depth + maximum_resolution)
+                  || !cell->is_locally_owned())
+                continue;
 
-                    std::shared_ptr<MaterialModel::ReactionRateOutputs<dim>> reaction_rate_out
-                      = out.template get_additional_output_object<MaterialModel::ReactionRateOutputs<dim>>();
+              fe_values.reinit(cell);
+              in.reinit(fe_values, cell, this->introspection(), this->get_solution());
+              this->get_material_model().evaluate(in, out);
 
-                    if (reaction_rate_out != nullptr)
-                      for (unsigned int q = 0; q < n_q_points; ++q)
+              auto reaction_rate_out = out.template get_additional_output_object<MaterialModel::ReactionRateOutputs<dim>>();
+              if (reaction_rate_out == nullptr)
+                continue;
+
+              for (unsigned int q = 0; q < n_q_points; ++q)
+                {
+                  if (this->get_geometry_model().depth(fe_values.quadrature_point(q)) > extraction_depth)
+                    continue;
+
+                  for (unsigned int p = 0; p < evaluation_points.size(); ++p)
+                    {
+                      const double distance = dim == 2 ? std::abs(fe_values.quadrature_point(q)[0] - evaluation_points[p][0])
+                                              : std::sqrt(Utilities::fixed_power<2>(fe_values.quadrature_point(q)[0] - evaluation_points[p][0]) +
+                                                          Utilities::fixed_power<2>(fe_values.quadrature_point(q)[1] - evaluation_points[p][1]));
+                      if (distance < spacings.first / 2)
                         {
-                          // Check that the current quadrature point is shallower than the extraction depth
-                          if (this->get_geometry_model().depth(fe_values.quadrature_point(q)) > extraction_depth)
-                            continue;
-
-                          // Check to see if the current quadrature point is within some range of the current surface point.
-                          const double distance = dim == 2 ? std::abs(fe_values.quadrature_point(q)[0] - evaluation_points[p][0])
-                                                  : std::sqrt(Utilities::fixed_power<2>(fe_values.quadrature_point(q)[0] - evaluation_points[p][0]) +
-                                                              Utilities::fixed_power<2>(fe_values.quadrature_point(q)[1] - evaluation_points[p][1]));
-
-                          // UPDATE FOR 3D CARTESIAN
-                          if (distance < spacings.first / 2)
-                            {
-                              // For my purposes, maybe I instead update this to be the REACTION TERMS instead of the
-                              // REACTION RATES.
-                              // const double extracted_volume = reaction_rate_out->reaction_rates[q][porosity_index] * fe_values.JxW(q) * timestep;
-                              const double extracted_volume = in.composition[q][porosity_index] * fe_values.JxW(q);
-
-                              derived_quantities_at_points[p][0] += extracted_volume;
-                            }
+                          derived_quantities_at_points[p][0] += in.composition[q][porosity_index] * fe_values.JxW(q);
+                          break;
                         }
-                  }
-              }
-          }
-      std::cout << "Finished the loop......" << std::endl;
+                    }
+                }
+            }
+        }
       return derived_quantities_at_points;
     }
 
-
+    
 
     template <int dim>
     LinearAlgebra::Vector
