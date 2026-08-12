@@ -512,6 +512,12 @@ namespace aspect
                            permeability / fluid_viscosity / porosity *
                            gravity * (solid_density - fluid_density);
         }
+
+      fluid_velocity[0] = 0;
+      fluid_velocity[1] = 0;
+      if (dim == 3)
+        fluid_velocity[2] = 0.5 / year_in_seconds;
+
       return fluid_velocity;
     }
 

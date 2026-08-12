@@ -321,6 +321,134 @@ namespace aspect
 
 
 
+
+    // template <int dim>
+    // std::vector<std::vector<double>>
+    // ParallelUnstructuredInterface<dim>::
+    // evaluate_aspect_derived_quantities_at_points () const
+    // {
+    //   Assert (remote_point_evaluator != nullptr,
+    //           ExcMessage("You can only call this function if you have previously "
+    //                      "set the evaluation points by calling set_evaluation_points(), "
+    //                      "and if the evaluator has not been invalidated by a mesh "
+    //                      "refinement step."));
+
+    //   // Non-Landlab ranks hold empty evaluation_points; broadcast from rank 0 so all
+    //   // ranks can contribute their locally owned cells to the integral.
+    //   unsigned int n_eval_points = evaluation_points.size();
+    //   MPI_Bcast(&n_eval_points, 1, MPI_UNSIGNED, 0, this->get_mpi_communicator());
+
+    //   std::vector<double> eval_coords(n_eval_points * dim);
+    //   for (unsigned int p = 0; p < evaluation_points.size(); ++p)
+    //     for (unsigned int d = 0; d < dim; ++d)
+    //       eval_coords[p * dim + d] = evaluation_points[p][d];
+    //   MPI_Bcast(eval_coords.data(), static_cast<int>(eval_coords.size()), MPI_DOUBLE, 0, this->get_mpi_communicator());
+
+    //   std::vector<Point<dim>> all_evaluation_points(n_eval_points);
+    //   for (unsigned int p = 0; p < n_eval_points; ++p)
+    //     for (unsigned int d = 0; d < dim; ++d)
+    //       all_evaluation_points[p][d] = eval_coords[p * dim + d];
+
+    //   // Compute derived quantities at each evaluation point:
+    //   // 1) Column-integrated extracted melt from the surface down to the
+    //   //    extraction depth, following the melt_extractor rule that all
+    //   //    porosity above the extraction depth is removed.
+    //   const unsigned int n_derived_quantities = 1;
+    //   std::vector<std::vector<double>> derived_quantities_at_points(
+    //     n_eval_points, std::vector<double>(n_derived_quantities, 0.0));
+
+    //   bool porosity_exists = false;
+    //   unsigned int porosity_index = numbers::invalid_unsigned_int;
+    //   if (this->introspection().compositional_name_exists("porosity"))
+    //     {
+    //       porosity_exists = true;
+    //       porosity_index = this->introspection().compositional_index_for_name("porosity");
+    //     }
+
+    //   const QIterated<dim> quadrature_formula (QTrapezoid<1>(),
+    //                                            this->get_parameters().stokes_velocity_degree);
+    //   const unsigned int n_q_points = quadrature_formula.size();
+
+    //   const UpdateFlags update_flags
+    //     = UpdateFlags(
+    //         update_values |
+    //         update_gradients |
+    //         update_quadrature_points |
+    //         update_JxW_values);
+
+    //   FEValues<dim> fe_values (this->get_mapping(),
+    //                            this->get_fe(),
+    //                            quadrature_formula,
+    //                            update_flags);
+
+    //   MaterialModel::MaterialModelInputs<dim> in(fe_values.n_quadrature_points, this->n_compositional_fields());
+    //   MaterialModel::MaterialModelOutputs<dim> out(fe_values.n_quadrature_points, this->n_compositional_fields());
+    //   MeltHandler<dim>::create_material_model_outputs(out);
+
+    //   const double extraction_depth = melt_extractor_extraction_depth;
+
+    //   double maximum_resolution = -std::numeric_limits<double>::max();
+    //   for (const auto &cell : this->get_triangulation().active_cell_iterators())
+    //     {
+    //       if (this->get_geometry_model().depth(cell->center()) >= extraction_depth)
+    //         for (unsigned int d = 0; d < dim; ++d)
+    //           maximum_resolution = std::max(maximum_resolution, cell->extent_in_direction(d));
+    //     }
+
+    //   this->get_material_model().create_additional_named_outputs(out);
+    //   if (porosity_exists)
+    //     {
+    //       for (const auto &cell : this->get_dof_handler().active_cell_iterators())
+    //         {
+    //           if (this->get_geometry_model().depth(cell->center()) >= (extraction_depth + maximum_resolution)
+    //               || !cell->is_locally_owned())
+    //             continue;
+
+    //           fe_values.reinit(cell);
+    //           in.reinit(fe_values, cell, this->introspection(), this->get_solution());
+    //           this->get_material_model().evaluate(in, out);
+
+    //           for (unsigned int q = 0; q < n_q_points; ++q)
+    //             {
+    //               if (this->get_geometry_model().depth(fe_values.quadrature_point(q)) > extraction_depth)
+    //                 continue;
+
+    //               for (unsigned int p = 0; p < all_evaluation_points.size(); ++p)
+    //                 {
+    //                   const double distance = dim == 2 ? std::abs(fe_values.quadrature_point(q)[0] - all_evaluation_points[p][0])
+    //                                           : std::sqrt(Utilities::fixed_power<2>(fe_values.quadrature_point(q)[0] - all_evaluation_points[p][0]) +
+    //                                                       Utilities::fixed_power<2>(fe_values.quadrature_point(q)[1] - all_evaluation_points[p][1]));
+    //                   if (distance < maximum_resolution / 2.)
+    //                     {
+    //                       // derived_quantities_at_points[p][0] += in.composition[q][porosity_index] > cutoff_porosity ? in.composition[q][porosity_index] * fe_values.JxW(q) : 0.0;
+    //                       const double reaction_term = out.reaction_terms[q][porosity_index];
+    //                       derived_quantities_at_points[p][0] += -reaction_term * fe_values.JxW(q);
+    //                       break;
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //   // Each rank only visited its locally owned cells; sum contributions across all ranks.
+    //   std::vector<double> flat(n_eval_points * n_derived_quantities);
+    //   for (unsigned int p = 0; p < n_eval_points; ++p)
+    //     for (unsigned int q = 0; q < n_derived_quantities; ++q)
+    //       flat[p * n_derived_quantities + q] = derived_quantities_at_points[p][q];
+
+    //   MPI_Allreduce(MPI_IN_PLACE, flat.data(), static_cast<int>(flat.size()), MPI_DOUBLE, MPI_SUM, this->get_mpi_communicator());
+
+    //   for (unsigned int p = 0; p < n_eval_points; ++p)
+    //     for (unsigned int q = 0; q < n_derived_quantities; ++q)
+    //       derived_quantities_at_points[p][q] = flat[p * n_derived_quantities + q];
+
+    //   return derived_quantities_at_points;
+    // }
+
+
+
+
+
     template <int dim>
     std::vector<std::vector<double>>
     ParallelUnstructuredInterface<dim>::

@@ -55,6 +55,63 @@ namespace aspect
 
 
 
+
+      // template <int dim>
+      // void
+      // FluidExtractor<dim>::calculate_reaction_rate_outputs (const typename Interface<dim>::MaterialModelInputs  &in,
+      //                                                       typename Interface<dim>::MaterialModelOutputs       &out) const
+      // {
+      //   // Depending on what the parent reaction model is, we need to determine which compositional field is used to
+      //   // react with the fluid. If the reaction scheme is katz2003, then this compositional field is "peridotite",
+      //   // and if the reaction scheme is tian2019, then this compositional field is "bound_fluid". A caveat for the
+      //   // katz2003 reaction scheme is that the porosity will only react with the solid if melt transport is enabled,
+      //   // otherwise no "peridotite" compositional field is required. Handle this edge case by making the reaction
+      //   // index negative and catching this farther down.
+      //   int reaction_index = std::numeric_limits<unsigned int>::max();
+      //   if (reaction_scheme_name == "katz2003")
+      //     reaction_index = this->include_melt_transport() ? this->introspection().compositional_index_for_name("peridotite") : -1;
+      //   else if (reaction_scheme_name == "tian approximation")
+      //     reaction_index = this->introspection().compositional_index_for_name("bound_fluid");
+      //   else
+      //     AssertThrow(false, ExcMessage("The reaction scheme " + reaction_scheme_name + " is not recognized as a valid reaction scheme for extracting fluids."));
+
+      //   const double timestep = this->get_timestep();
+
+      //   for (unsigned int i=0; i < in.n_evaluation_points(); ++i)
+      //     {
+      //       const unsigned int porosity_index = this->introspection().compositional_index_for_name("porosity");
+      //       const double depth = this->get_geometry_model().depth(in.position[i]);
+      //       const bool above_extraction_depth = depth < extraction_depth;
+
+      //       if (above_extraction_depth)
+      //         {
+      //           const double porosity = in.composition[i][porosity_index];
+      //           double porosity_change = 0.0;
+
+      //           if (extraction_method == "linear")
+      //             porosity_change = -porosity * (extraction_depth - depth) / extraction_depth;
+      //           else if (extraction_method == "constant")
+      //             porosity_change = -porosity;
+      //           else
+      //             AssertThrow(false, ExcMessage("The extraction method " + extraction_method + " is not recognized as a valid extraction method for extracting fluids."));
+
+      //           // Prevent negative porosity from developing
+      //           porosity_change = std::max(-porosity, porosity_change);
+      //           out.reaction_terms[i][porosity_index] = std::min(porosity_change, 0.0);
+
+      //           // Set the reaction rates for the compositional field that reacts with the fluid to be 0. This is to prevent the "porosity" from being extracted while
+      //           // simultaneously reacting with the solid phase. Do not override the reaction rate if it is negative, because we still want to allow the solid phase
+      //           // to create porosity, which will then be extracted since it is above the extraction depth.
+      //           if (reaction_index >= 0)
+      //             if (out.reaction_terms[i][reaction_index] > 0)
+      //               out.reaction_terms[i][reaction_index] -= out.reaction_terms[i][reaction_index];
+      //         }
+      //     }
+      // }
+
+
+
+
       template <int dim>
       void
       FluidExtractor<dim>::calculate_reaction_rate_outputs (const typename Interface<dim>::MaterialModelInputs  &in,
@@ -77,7 +134,7 @@ namespace aspect
         else
           AssertThrow(false, ExcMessage("The reaction scheme " + reaction_scheme_name + " is not recognized as a valid reaction scheme for extracting fluids."));
 
-        const double timestep = this->get_timestep();
+        const double extraction_timescale = 5 * this->get_timestep();
 
         for (unsigned int i=0; i < in.n_evaluation_points(); ++i)
           {
@@ -101,7 +158,7 @@ namespace aspect
 
                     // Prevent negative porosity from developing
                     porosity_change = std::max(-porosity, porosity_change);
-                    reaction_rate_out->reaction_rates[i][porosity_index] = std::min(porosity_change, 0.0) / timestep;
+                    reaction_rate_out->reaction_rates[i][porosity_index] = std::min(porosity_change, 0.0) / extraction_timescale;
 
                     // Set the reaction rates for the compositional field that reacts with the fluid to be 0. This is to prevent the "porosity" from being extracted while
                     // simultaneously reacting with the solid phase. Do not override the reaction rate if it is negative, because we still want to allow the solid phase
