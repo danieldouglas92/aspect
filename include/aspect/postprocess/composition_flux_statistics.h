@@ -19,11 +19,12 @@
 */
 
 
-#ifndef _aspect_postprocess_composition_mass_statistics_h
-#define _aspect_postprocess_composition_mass_statistics_h
+#ifndef _aspect_postprocess_composition_flux_statistics_h
+#define _aspect_postprocess_composition_flux_statistics_h
 
 #include <aspect/postprocess/interface.h>
 #include <aspect/simulator_access.h>
+#include <aspect/gravity_model/interface.h>
 
 namespace aspect
 {
@@ -37,11 +38,11 @@ namespace aspect
      * @ingroup Postprocessing
      */
     template <int dim>
-    class CompositionMassStatistics : public Interface<dim>, public ::aspect::SimulatorAccess<dim>
+    class CompositionFluxStatistics : public Interface<dim>, public ::aspect::SimulatorAccess<dim>
     {
       public:
         /**
-         * Evaluate the solution for some temperature statistics.
+         * Evaluate the solution for some composition flux statistics.
          */
         std::pair<std::string,std::string>
         execute (TableHandler &statistics) override;
@@ -62,6 +63,7 @@ namespace aspect
       private:
         unsigned int number_of_depths;
         std::vector<double> cutoff_depths;
+        double depth_layer_half_thickness;
     };
   }
 }
