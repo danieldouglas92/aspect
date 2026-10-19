@@ -167,6 +167,17 @@ namespace aspect
     boost::signals2::signal<void (typename parallel::distributed::Triangulation<dim> &)>  pre_compute_no_normal_flux_constraints;
 
     /**
+     * A signal that is triggered after the material model has been evaluated
+     * in compute_reactions(), and allows modifying the reaction terms.
+     * Arguments are the SimulatorAccess, the material model inputs for
+     * the current cell, and the (modifiable) material model outputs.
+     */
+    boost::signals2::signal<void (const SimulatorAccess<dim> &,
+                                  const MaterialModel::MaterialModelInputs<dim> &,
+                                  MaterialModel::MaterialModelOutputs<dim> &)>
+    modify_reaction_outputs;
+
+    /**
      * A signal that is called after the computation of tangential boundary
      * conditions for which normal vectors are needed, i.e. calls to the
      * compute_no_normal_flux_constraints function for both the
@@ -311,6 +322,20 @@ namespace aspect
      * object.
      */
     boost::signals2::signal<void (const SimulatorAccess<dim> &)> pre_nonlinear_solver;
+
+    /**
+     * A signal that is triggered just before the compute_reactions() function is called.
+     * The arguments to this signal is a reference to the SimulatorAccess
+     * object.
+     */
+    boost::signals2::signal<void (const SimulatorAccess<dim> &)> pre_compute_reactions;
+
+    /**
+     * A signal that is triggered just after the compute_reactions() function is called.
+     * The arguments to this signal is a reference to the SimulatorAccess
+     * object.
+     */
+    boost::signals2::signal<void (const SimulatorAccess<dim> &)> post_compute_reactions;
 
     /**
      * A signal that is triggered at the end of the set_assemblers() function that

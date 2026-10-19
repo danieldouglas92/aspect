@@ -33,6 +33,7 @@
 #include <deal.II/matrix_free/fe_point_evaluation.h>
 
 #include <aspect/particle/generator/interface.h>
+#include <aspect/particle/teleporter/interface.h>
 #include <aspect/particle/integrator/interface.h>
 #include <aspect/particle/interpolator/interface.h>
 #include <aspect/particle/property/interface.h>
@@ -57,6 +58,11 @@ namespace aspect
   namespace Particle
   {
     using namespace dealii::Particles;
+    namespace Teleporter
+    {
+      template <int dim>
+      class Interface;
+    }
 
     namespace Generator
     {
@@ -385,6 +391,11 @@ namespace aspect
          * Generation scheme for creating particles in this manager
          */
         std::unique_ptr<Generator::Interface<dim>> generator;
+
+        /**
+         * Teleportation scheme for moving particles in this manager
+         */
+        std::unique_ptr<Teleporter::Interface<dim>> teleporter;
 
         /**
          * Integration scheme for moving particles in this manager

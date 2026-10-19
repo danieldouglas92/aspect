@@ -66,6 +66,7 @@ namespace aspect
   :
     particle_manager_index(other.particle_manager_index),
                            generator(std::move(other.generator)),
+                           teleporter(std::move(other.teleporter)),
                            integrator(std::move(other.integrator)),
                            interpolator(std::move(other.interpolator)),
                            particle_handler(std::move(other.particle_handler)),
@@ -1211,6 +1212,7 @@ namespace aspect
             Generator::declare_parameters<dim>(prm);
             Integrator::declare_parameters<dim>(prm);
             Interpolator::declare_parameters<dim>(prm);
+            Teleporter::declare_parameters<dim>(prm);
 
             Property::Manager<dim>::declare_parameters(prm);
           }
@@ -1396,6 +1398,19 @@ namespace aspect
         interpolator->set_particle_manager_index(particle_manager_index);
         interpolator->parse_parameters(prm);
         interpolator->initialize();
+
+        // Create a teleporter object depending on the specified parameter
+        teleporter = Teleporter::create_particle_teleporter<dim>(prm);
+        if (teleporter)
+          {
+            if (SimulatorAccess<dim> *sim =
+                  dynamic_cast<SimulatorAccess<dim> *>(teleporter.get()))
+              sim->initialize_simulator(this->get_simulator());
+
+            teleporter->set_particle_manager_index(particle_manager_index);
+            teleporter->parse_parameters(prm);
+            teleporter->initialize();
+          }
 
         this->get_computing_timer().leave_subsection("Particles: Initialization");
 
