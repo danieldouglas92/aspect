@@ -221,6 +221,17 @@ The following properties are available:
 **Documentation:** Algorithm used to delete excess particles from cells. If point density function is chosen, the particle manager will generate a point density function from the locations of each particle and remove the particle whose position is at the maximum of the point density function.
 ::::
 
+::::{dropdown} __Parameter:__ {ref}`Particle teleportation scheme<parameters:Particles_202/Particle_20teleportation_20scheme>`
+:name: parameters:Particles_202/Particle_20teleportation_20scheme
+**Default value:**
+
+**Pattern:** [Selection |most compressive stress ]
+
+**Documentation:** Select one of the following models:
+
+&lsquo;most compressive stress&rsquo;: A plugin in which the particle property is defined as the evolving chemical composition that results from the formation of oceanic crust and lithosphere as mantle material approaches the surface and melts. Note that this does not necessarily conserves the bulk chemical composition of the mantle, since the conversion only depends on the mantle flow. See the crust and lithosphere formation reaction model documentation for more detailed information.
+::::
+
 ::::{dropdown} __Parameter:__ {ref}`Particle weight<parameters:Particles_202/Particle_20weight>`
 :name: parameters:Particles_202/Particle_20weight
 **Default value:** 10
@@ -1019,4 +1030,44 @@ A typical example would be to set this runtime parameter to &lsquo;pi=3.14159265
 **Pattern:** [Double 0...1 (inclusive)]
 
 **Documentation:** The minimum porosity that has to be present at the position of a particle for it to be considered a melt particle (in the sense that the melt presence property is set to 1).
+::::
+
+(parameters:Particles_202/Particle_20teleportation)=
+## **Subsection:** Particles 2 / Particle teleportation
+::::{dropdown} __Parameter:__ {ref}`Number of jumps<parameters:Particles_202/Particle_20teleportation/Number_20of_20jumps>`
+:name: parameters:Particles_202/Particle_20teleportation/Number_20of_20jumps
+**Default value:** 100
+
+**Pattern:** [Integer range -2147483648...2147483647 (inclusive)]
+
+**Documentation:** Defines how many jumps a particle should do
+::::
+
+(parameters:Particles_202/Particle_20teleportation/Most_20compressive_20stress)=
+## **Subsection:** Particles 2 / Particle teleportation / Most compressive stress
+::::{dropdown} __Parameter:__ {ref}`Dike extraction depth<parameters:Particles_202/Particle_20teleportation/Most_20compressive_20stress/Dike_20extraction_20depth>`
+:name: parameters:Particles_202/Particle_20teleportation/Most_20compressive_20stress/Dike_20extraction_20depth
+**Default value:** 0.0
+
+**Pattern:** [Double -MAX_DOUBLE...MAX_DOUBLE (inclusive)]
+
+**Documentation:** Defines the dike extraction depth for teleportation
+::::
+
+::::{dropdown} __Parameter:__ {ref}`Maximum number of particles to generate<parameters:Particles_202/Particle_20teleportation/Most_20compressive_20stress/Maximum_20number_20of_20particles_20to_20generate>`
+:name: parameters:Particles_202/Particle_20teleportation/Most_20compressive_20stress/Maximum_20number_20of_20particles_20to_20generate
+**Default value:** 100
+
+**Pattern:** [Integer range -2147483648...2147483647 (inclusive)]
+
+**Documentation:** Defines the maximum number of particles to generate
+::::
+
+::::{dropdown} __Parameter:__ {ref}`Melt volume threshold<parameters:Particles_202/Particle_20teleportation/Most_20compressive_20stress/Melt_20volume_20threshold>`
+:name: parameters:Particles_202/Particle_20teleportation/Most_20compressive_20stress/Melt_20volume_20threshold
+**Default value:** 1e50
+
+**Pattern:** [Double -MAX_DOUBLE...MAX_DOUBLE (inclusive)]
+
+**Documentation:** Defines the melt volume threshold for teleportation
 ::::

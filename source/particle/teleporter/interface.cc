@@ -93,7 +93,7 @@ namespace aspect
       {
         std::string name;
         name = prm.get ("Particle teleportation scheme");
-        
+
         if (name.empty())
           return nullptr;
 

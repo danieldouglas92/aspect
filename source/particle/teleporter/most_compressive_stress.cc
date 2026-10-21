@@ -137,18 +137,18 @@ namespace aspect
                                                          const MaterialModel::MaterialModelInputs<dim> &in,
                                                          MaterialModel::MaterialModelOutputs<dim> &out)
       {
-        // This function is called during the loop over all cells in the compute_reactions step just 
+        // This function is called during the loop over all cells in the compute_reactions step just
         // after the material model has been evaluated. Therefore, we do not need to loop over all cells,
-        // but instead can just check if the current cell is valid and locally owned. If it is, then we 
-        // compute the melt volume in that cell, and if it satisfies the criteria for generating a 
+        // but instead can just check if the current cell is valid and locally owned. If it is, then we
+        // compute the melt volume in that cell, and if it satisfies the criteria for generating a
         // particle, then we assign all that volume to a single particle, and modify the reaction rates
-        // to remove all of the melt from the cell. 
+        // to remove all of the melt from the cell.
         std::cout << "Creating particles..." << std::endl;
 
         // If the current cell being processed in compute_reactions is not valid or locally owned, immediate skip.
         if (in.current_cell.state() != IteratorState::valid || !in.current_cell->is_locally_owned())
           return;
-        
+
         // The current cell is valid and locally owned, so we can proceed with computing the melt volume.
         const Quadrature<dim> &quadrature_formula = simulator_access.introspection().quadratures.temperature;
         const unsigned int n_q_points = quadrature_formula.size();
@@ -179,8 +179,8 @@ namespace aspect
         // If the local melt volume exceeds the user-specified threshold, add a single particle at the center of the cell
         // that contains all of the melt within the cell.
         const unsigned int number_of_reaction_steps = std::max(static_cast<unsigned int>(this->get_timestep() / this->get_parameters().reaction_time_step),
-                                                                std::max(this->get_parameters().reaction_steps_per_advection_step,1U));
-        const double reaction_time_step_size = this->get_timestep() / static_cast<double>(number_of_reaction_steps);      
+                                                               std::max(this->get_parameters().reaction_steps_per_advection_step,1U));
+        const double reaction_time_step_size = this->get_timestep() / static_cast<double>(number_of_reaction_steps);
         if (local_melt_volume > melt_volume_threshold)
           {
             Particle::Particle<dim> particle;
@@ -203,7 +203,7 @@ namespace aspect
             location_file << '\n' << 0;
             for (unsigned int d = 0; d < dim; ++d)
               location_file << ' ' << it->get_location()[d];
-            location_file << '\n';   
+            location_file << '\n';
 
             // Remove the melt from the cell by setting the porosity reaction term
             for (unsigned int q=0; q<n_q_points; ++q)
@@ -220,9 +220,9 @@ namespace aspect
       template <int dim>
       void MostCompressiveStress<dim>::advect_particles (const SimulatorAccess<dim> &simulator_access)
       {
-        // This function takes all of the particles created in the create_particles function and then 
+        // This function takes all of the particles created in the create_particles function and then
         // advects them along the most compressive stress direction. It does this instantaneously, until
-        // the particle either exits the model domain, or reaches a maximum of number of allowed particle 
+        // the particle either exits the model domain, or reaches a maximum of number of allowed particle
         // "jumps".
         std::cout << "Advecting particles..." << std::endl;
         const Quadrature<dim> &quadrature_formula = simulator_access.introspection().quadratures.temperature;
@@ -264,9 +264,9 @@ namespace aspect
                     for (auto &particle : teleport_particle_handler.particles_in_cell(cell))
                       {
                         std::ofstream location_file("particle_paths/particle_id_" +
-                                            std::to_string(particle.get_id()) + ".txt",
-                                            std::ios::app);
-                        // We ultimately need to chose one of the quadrature points to use 
+                                                    std::to_string(particle.get_id()) + ".txt",
+                                                    std::ios::app);
+                        // We ultimately need to chose one of the quadrature points to use
                         // for advecting the particle, so we find the closest quadrature point.
                         unsigned int closest_q = numbers::invalid_unsigned_int;
                         double min_distance_squared = std::numeric_limits<double>::max();
