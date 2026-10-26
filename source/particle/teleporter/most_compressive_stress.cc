@@ -35,6 +35,7 @@
 #include <aspect/geometry_model/interface.h>
 #include <aspect/particle/manager.h>
 #include <aspect/material_model/rheology/elasticity.h>
+#include <aspect/gravity_model/interface.h>
 #include <aspect/prescribed_dilation/interface.h>
 #include <aspect/material_model/interface.h>
 
@@ -133,6 +134,15 @@ namespace aspect
 
 
       template <int dim>
+      void MostCompressiveStress<dim>::store_magma_as_surface_composition(const CellAccessor<dim> &cell,
+                                                                          const SimulatorAccess<dim> &simulator_access)
+      {
+        const unsigned int surf_porosity_idx = simulator_access.introspection().compositional_index_for_name("surface_porosity");
+      }
+
+
+
+      template <int dim>
       void MostCompressiveStress<dim>::create_particles (const SimulatorAccess<dim> &simulator_access,
                                                          const MaterialModel::MaterialModelInputs<dim> &in,
                                                          MaterialModel::MaterialModelOutputs<dim> &out)
@@ -194,6 +204,7 @@ namespace aspect
             it->set_properties(stored_melt);
 
             // Create a fresh ASCII file for this particle and record its initial location.
+            // DELETE THIS FILE STUFF ONCE DONE WITH TESTING
             std::ofstream location_file("particle_paths/particle_id_" +
                                         std::to_string(it->get_id()) + ".txt");
 
@@ -206,6 +217,7 @@ namespace aspect
             location_file << '\n';
 
             // Remove the melt from the cell by setting the porosity reaction term
+            // Also remove any melt stored as a surface composition.
             for (unsigned int q=0; q<n_q_points; ++q)
               {
                 const Point<dim> &quadrature_point = fe_values.quadrature_point(q);
@@ -259,47 +271,69 @@ namespace aspect
                     // Compute the viscosity and additional outputs
                     simulator_access.get_material_model().evaluate(in, out);
 
-                    // Initialize a vector for storing the principal stresses at each quadrature point.
-                    std::vector<std::array<std::pair<double, Tensor<1,dim>>, dim>> principal_stresses_and_directions(n_q_points);
-                    for (auto &particle : teleport_particle_handler.particles_in_cell(cell))
+                    const bool is_boundary_cell = cell->at_boundary();
+
+                    if (is_boundary_cell)
                       {
-                        std::ofstream location_file("particle_paths/particle_id_" +
-                                                    std::to_string(particle.get_id()) + ".txt",
-                                                    std::ios::app);
-                        // We ultimately need to chose one of the quadrature points to use
-                        // for advecting the particle, so we find the closest quadrature point.
-                        unsigned int closest_q = numbers::invalid_unsigned_int;
-                        double min_distance_squared = std::numeric_limits<double>::max();
-                        for (unsigned int q=0; q<n_q_points; ++q)
+                        store_magma_as_surface_composition(cell, simulator_access);
+                      }
+
+                    else
+                      {
+
+                        // Initialize a vector for storing the principal stresses at each quadrature point.
+                        std::vector<std::array<std::pair<double, Tensor<1,dim>>, dim>> principal_stresses_and_directions(n_q_points);
+                        for (auto &particle : teleport_particle_handler.particles_in_cell(cell))
                           {
-                            principal_stresses_and_directions[q] = this->principal_stresses_and_directions(in,
-                                                                                                           out,
-                                                                                                           simulator_access,
-                                                                                                           q);
-
-                            const double distance_squared =
-                              (particle.get_location() - fe_values.quadrature_point(q)).norm_square();
-                            if (distance_squared < min_distance_squared)
+                            std::ofstream location_file("particle_paths/particle_id_" +
+                                                        std::to_string(particle.get_id()) + ".txt",
+                                                        std::ios::app);
+                            // We ultimately need to chose one of the quadrature points to use
+                            // for advecting the particle, so we find the closest quadrature point.
+                            unsigned int closest_q = numbers::invalid_unsigned_int;
+                            double min_distance_squared = std::numeric_limits<double>::max();
+                            for (unsigned int q=0; q<n_q_points; ++q)
                               {
-                                min_distance_squared = distance_squared;
-                                closest_q = q;
+                                principal_stresses_and_directions[q] = this->principal_stresses_and_directions(in,
+                                                                                                              out,
+                                                                                                              simulator_access,
+                                                                                                              q);
+
+                                const double distance_squared =
+                                  (particle.get_location() - fe_values.quadrature_point(q)).norm_square();
+                                if (distance_squared < min_distance_squared)
+                                  {
+                                    min_distance_squared = distance_squared;
+                                    closest_q = q;
+                                  }
                               }
+
+                            // Use the principal stress corresponding to the closest quadrature point to determine the move vector.
+                            Tensor<1,dim> movevector = principal_stresses_and_directions[closest_q][0].second;
+
+                            // ASPECT assigns a "direction" to the principal stresses, but in this case we eant the actual
+                            // advection direction to be physical. Dikes will proagrate anti-parallel to gravity due to magma
+                            // being buoyant, so adjust the sign of the "movevector" so that the dot product of gravity and
+                            // the principal stress is negative.
+                            const Tensor<1,dim> gravity_vector = this->get_gravity_model().gravity_vector(in.position[closest_q]);
+                            const double scale = movevector * gravity_vector < 0 ? cell->diameter() / 2.0 : -cell->diameter() / 2.0;
+
+                            // Principal directions are unit vectors, so scale the vector by half the diameter of the
+                            // cell that the particle is in so that we don't move the particle too far in a single jump.
+                            movevector *= scale;
+
+                            // Check to see whether the new location will place the particle outside of the model domain. 
+                            // If it does, we need to transfer the melt stored on the particle to the boundary face of the 
+                            // cell that the particle is CURRENTLY in.
+                            const Point<dim> new_location = particle.get_location() + movevector;
+                            particle.set_location(new_location);
+
+                            // DELETE FILE STUFF ONCE DONE WITH TESTING.
+                            location_file << jump;
+                            for (unsigned int d = 0; d < dim; ++d)
+                              location_file << ' ' << new_location[d];
+                            location_file << '\n';
                           }
-
-                        // Use the principal stress corresponding to the closest quadrature point to determine the move vector.
-                        Tensor<1,dim> movevector = principal_stresses_and_directions[closest_q][0].second;
-
-                        // Principal directions are unit vectors, so scale the vector by half the diameter of the
-                        // cell that the particle is in so that we don't move the particle too far in a single jump.
-                        movevector *= cell->diameter() / 2.0;
-
-                        const Point<dim> new_location = particle.get_location() + movevector;
-                        particle.set_location(new_location);
-
-                        location_file << jump;
-                        for (unsigned int d = 0; d < dim; ++d)
-                          location_file << ' ' << new_location[d];
-                        location_file << '\n';
                       }
                   }
               }
