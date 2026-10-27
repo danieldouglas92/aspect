@@ -88,6 +88,7 @@ namespace aspect
           double dike_extraction_depth;
 
           ParticleHandler<dim> teleport_particle_handler;
+          bool teleport_particle_handler_initialized = false;
           types::particle_index next_particle_id = 0;
 
       };

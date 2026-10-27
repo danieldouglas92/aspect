@@ -51,10 +51,6 @@ namespace aspect
       void
       MostCompressiveStress<dim>::initialize()
       {
-        // Declare a particle handler for dealing with the teleportation here. Assign each
-        // particle generated here with a single property (melt volume).
-        teleport_particle_handler.initialize (this->get_triangulation(), this->get_mapping(), 1);
-
         this->get_signals().modify_reaction_outputs.connect(
           [&](const SimulatorAccess<dim> &simulator_access,
               const MaterialModel::MaterialModelInputs<dim> &in,
@@ -144,14 +140,37 @@ namespace aspect
         // compute the melt volume in that cell, and if it satisfies the criteria for generating a
         // particle, then we assign all that volume to a single particle, and modify the reaction rates
         // to remove all of the melt from the cell.
-        std::cout << "Creating particles..." << std::endl;
+
+        // I THINK I HAVE AN IDEA FOR HOW TO ACHIEVE EVERYTHING THAT I NEED TO WITHOUT DOING TOO MUCH MODIFICATION
+        // WITHIN THIS LOOP, SINCE THIS IS THE ONLY WAY THAT WE CAN DIRECTLY MODIFY THE MATERIAL MODEL INPUTS REACTIONS
+        // WE NEED TO BOTH REMOVE POROSITY FROM DEPTH AND ADD POROSITY TO THE SURFACE. THE TRICK I THINK IS TO NOT DELETE
+        // PARTICLES IN THE ADVECTION FUNCTION BELOW. WHAT WE NEED TO DO INSTEAD IS ITERATE OVER EACH PARTICLE IN THE
+        // ADVECTION FUNCTION AND EITHER:
+        //    1. STOP THE ADVECTION AS SOON AS THE PARTICLE REACHES A CELL THAT IS ON THE MODEL BOUNDARY CONTAINING
+        //       A FACE THAT LIES ON THE TOP BOUNDARY, OR
+        //    2. CONTINUE ADVECTION UNTIL THE NUMBER OF JUMPS IS REACHED. IF THE PARTICLES DOES NOT END UP IN A CELL
+        //       ON THE TOP BOUNDARY, THEN IT SHOULD BE REMOVED.
+        // BECAUSE THIS WILL PREVENT PARTICLES FROM BEING REMOVED, THEN IN THIS FUNCTION, WE CAN CHECK EACH CELL THAT
+        // CONTAINS A PARTICLE. IF IT DOES, WE KNOW THAT THIS CELL NEEDS TO HAVE THE MELT ON THAT PARTICLE ASSIGNED
+        // TO THE REACTION RATES IN THE CURRENT CELL ON THE SURFACE NODES. THEN, WE JUST NEED TO MAKE SURE WE LOOP OVER
+        // THESE PARTICLES FIRST, AND DELETE THEM BEFORE WE MAKE ANY NEW PARTICLES.
 
         // If the current cell being processed in compute_reactions is not valid or locally owned, immediate skip.
         if (in.current_cell.state() != IteratorState::valid || !in.current_cell->is_locally_owned())
           return;
 
+        // Mesh deformation replaces the simulator mapping in setup_dofs(). Initialize
+        // this handler on first use so it observes the final mapping.
+        if (!teleport_particle_handler_initialized)
+          {
+            teleport_particle_handler.initialize(simulator_access.get_triangulation(),
+                                                 simulator_access.get_mapping(),
+                                                 1);
+            teleport_particle_handler_initialized = true;
+          }
+
         // The current cell is valid and locally owned, so we can proceed with computing the melt volume.
-        const Quadrature<dim> &quadrature_formula = simulator_access.introspection().quadratures.temperature;
+        const Quadrature<dim> &quadrature_formula = simulator_access.introspection().quadratures.compositional_field_max;
         const unsigned int n_q_points = quadrature_formula.size();
         const Mapping<dim> &mapping = simulator_access.get_mapping();
         FEValues<dim> fe_values ( mapping,
@@ -168,20 +187,63 @@ namespace aspect
           = out.template get_additional_output_object<MaterialModel::ReactionRateOutputs<dim>>();
         const unsigned int porosity_idx = simulator_access.introspection().compositional_index_for_name("porosity");
 
-        // Integrate the total melt volume within the cell.
-        double local_melt_volume = 0;
-        for (unsigned int q=0; q<n_q_points; ++q)
-          {
-            const Point<dim> &quadrature_point = fe_values.quadrature_point(q);
-            if (this->get_geometry_model().depth(quadrature_point) < dike_extraction_depth)
-              local_melt_volume += in.composition[q][porosity_idx]*fe_values.JxW(q);
-          }
+        std::vector<double> porosity_values(n_q_points);
+        const unsigned int surf_porosity_idx = simulator_access.introspection().compositional_index_for_name("surface_porosity");
 
         // If the local melt volume exceeds the user-specified threshold, add a single particle at the center of the cell
         // that contains all of the melt within the cell.
         const unsigned int number_of_reaction_steps = std::max(static_cast<unsigned int>(this->get_timestep() / this->get_parameters().reaction_time_step),
                                                                std::max(this->get_parameters().reaction_steps_per_advection_step,1U));
         const double reaction_time_step_size = this->get_timestep() / static_cast<double>(number_of_reaction_steps);
+
+        // Zero out all of the surface porosity from the previous advection step. I think that this still
+        // needs to be done explicitly before applying the melt from any particles in the currente cell as
+        // a reaction rate.
+        for (unsigned int q=0; q<in.n_evaluation_points(); ++q)
+          reaction_rate_outputs->reaction_rates[q][surf_porosity_idx] = -in.composition[q][surf_porosity_idx] / reaction_time_step_size;
+
+        // Now check to see if any particles ended up in the current cell from the advection of the particles.
+        if (teleport_particle_handler.n_particles_in_cell(in.current_cell) > 0)
+          {
+            for (auto &particle: teleport_particle_handler.particles_in_cell(in.current_cell))
+              {
+                const double particle_melt = particle.get_properties()[0];
+                std::vector<double> distance_weights(in.n_evaluation_points());
+                for (unsigned int q=0; q<in.n_evaluation_points(); ++q)
+                  {
+                    const Point<dim> &quadrature_point = in.position[q];
+                    distance_weights[q] = quadrature_point.distance(particle.get_location());
+                  }
+
+                // Normalize the distance weights so that they sum to 1.
+                const double total_distance = std::accumulate(distance_weights.begin(), distance_weights.end(), 0.0);
+                if (total_distance > 0)
+                  for (unsigned int q=0; q<in.n_evaluation_points(); ++q)
+                    distance_weights[q] /= total_distance;
+
+                // Apply the particle melt to the reaction rates based on the distance weights.
+                for (unsigned int q=0; q<in.n_evaluation_points(); ++q)
+                  reaction_rate_outputs->reaction_rates[q][surf_porosity_idx] += particle_melt * distance_weights[q] / reaction_time_step_size;
+              }
+
+            while (teleport_particle_handler.n_particles_in_cell(in.current_cell) > 0)
+              teleport_particle_handler.remove_particle(
+                teleport_particle_handler.particles_in_cell(in.current_cell).begin());
+          }
+
+
+        // Integrate the total melt volume within the cell.
+        double local_melt_volume = 0;
+        for (unsigned int q=0; q<n_q_points; ++q)
+          {
+            const Point<dim> &quadrature_point = fe_values.quadrature_point(q);
+            fe_values[this->introspection().extractors.compositional_fields[porosity_idx]]
+            .get_function_values(this->get_solution(),
+                                 porosity_values);
+            if (this->get_geometry_model().depth(quadrature_point) < dike_extraction_depth)
+              local_melt_volume += porosity_values[q] * fe_values.JxW(q);
+          }
+
         if (local_melt_volume > melt_volume_threshold)
           {
             dealii::Particles::Particle<dim> particle;
@@ -209,10 +271,9 @@ namespace aspect
 
             // Remove the melt from the cell by setting the porosity reaction term
             // Also remove any melt stored as a surface composition.
-            for (unsigned int q=0; q<n_q_points; ++q)
+            for (unsigned int q=0; q<in.n_evaluation_points(); ++q)
               {
-                const Point<dim> &quadrature_point = fe_values.quadrature_point(q);
-                if (this->get_geometry_model().depth(quadrature_point) < dike_extraction_depth)
+                if (this->get_geometry_model().depth(in.position[q]) < dike_extraction_depth)
                   reaction_rate_outputs->reaction_rates[q][porosity_idx] = -in.composition[q][porosity_idx] / reaction_time_step_size;
               }
           }
@@ -228,19 +289,15 @@ namespace aspect
         // the particle either exits the model domain, or reaches a maximum of number of allowed particle
         // "jumps".
         std::cout << "Advecting particles..." << std::endl;
-        const unsigned int surf_porosity_idx = simulator_access.introspection().compositional_index_for_name("surface_porosity");
+        if (!teleport_particle_handler_initialized)
+          {
+            teleport_particle_handler.initialize(simulator_access.get_triangulation(),
+                                                 simulator_access.get_mapping(),
+                                                 1);
+            teleport_particle_handler_initialized = true;
+          }
 
         const Mapping<dim> &mapping = simulator_access.get_mapping();
-        const QGauss<dim-1> face_quadrature_formula (this->get_fe().base_element(this->introspection().base_elements.temperature).degree+1);
-        const unsigned int n_face_q_points = face_quadrature_formula.size();
-        FEFaceValues<dim> fe_face_values( mapping,
-                                          simulator_access.get_fe(),
-                                          face_quadrature_formula,
-                                          update_values | 
-                                          update_gradients |
-                                          update_quadrature_points | 
-                                          update_JxW_values);
-
         const Quadrature<dim> &quadrature_formula = simulator_access.introspection().quadratures.temperature;
         const unsigned int n_q_points = quadrature_formula.size();
         FEValues<dim> fe_values ( mapping,
@@ -254,6 +311,7 @@ namespace aspect
         MaterialModel::MaterialModelOutputs<dim> out(fe_values.n_quadrature_points, simulator_access.n_compositional_fields());
 
         in.requested_properties = MaterialModel::MaterialProperties::viscosity | MaterialModel::MaterialProperties::additional_outputs;
+        const types::boundary_id top_boundary_id = this->get_geometry_model().translate_symbolic_boundary_name_to_id("top");
 
         // Loop over the allowed number of jumps for particle advection,
         // then loop over all cells, then loop over all particles, then
@@ -264,98 +322,82 @@ namespace aspect
           {
             for (auto &cell: simulator_access.get_dof_handler().active_cell_iterators())
               {
-                if (cell->is_locally_owned() && teleport_particle_handler.n_particles_in_cell(cell) > 0)
+                bool is_top_boundary_cell = false;
+                if (cell->at_boundary())
                   {
-                    fe_values.reinit (cell);
-                    in.reinit(fe_values, cell, simulator_access.introspection(), simulator_access.get_solution());
-                    simulator_access.get_material_model().create_additional_named_outputs(out);
+                    for (const unsigned int f : cell->face_indices())
+                      if (cell->face(f)->at_boundary() &&
+                          cell->face(f)->boundary_id() == top_boundary_id)
+                        {
+                          is_top_boundary_cell = true;
+                          break;
+                        }
+                  }
 
-                    // Compute the viscosity and additional outputs
-                    simulator_access.get_material_model().evaluate(in, out);
+                if (is_top_boundary_cell ||
+                    !cell->is_locally_owned() ||
+                    teleport_particle_handler.n_particles_in_cell(cell) == 0)
+                  continue;
 
-                    const bool is_boundary_cell = cell->at_boundary();
+                fe_values.reinit(cell);
+                in.reinit(fe_values, cell, simulator_access.introspection(), simulator_access.get_solution());
+                simulator_access.get_material_model().create_additional_named_outputs(out);
+                simulator_access.get_material_model().evaluate(in, out);
 
-                    // Initialize a vector for storing the principal stresses at each quadrature point.
-                    std::vector<std::array<std::pair<double, Tensor<1,dim>>, dim>> principal_stresses_and_directions(n_q_points);
-                    for (auto &particle : teleport_particle_handler.particles_in_cell(cell))
+                std::vector<std::array<std::pair<double, Tensor<1,dim>>, dim>> principal_stresses_and_directions(n_q_points);
+                for (unsigned int q = 0; q < n_q_points; ++q)
+                  principal_stresses_and_directions[q] = this->principal_stresses_and_directions(in,
+                                                                                                 out,
+                                                                                                 simulator_access,
+                                                                                                 q);
+
+                for (auto &particle : teleport_particle_handler.particles_in_cell(cell))
+                  {
+                    std::ofstream location_file("particle_paths/particle_id_" +
+                                                std::to_string(particle.get_id()) + ".txt",
+                                                std::ios::app);
+
+                    unsigned int closest_q = numbers::invalid_unsigned_int;
+                    double min_distance_squared = std::numeric_limits<double>::max();
+                    for (unsigned int q = 0; q < n_q_points; ++q)
                       {
-
-                        if (is_boundary_cell)
-                          for (const unsigned int f : cell->face_indices())
-                            {
-                              if (!cell->at_boundary(f))
-                                continue;
-                              fe_face_values.reinit(cell, f);
-
-                              const double particle_melt = particle.get_properties()[0];
-
-                              for (unsigned int q = 0;
-                                  q < fe_face_values.n_quadrature_points;
-                                  ++q)
-                                {
-                                  const auto &point = fe_face_values.quadrature_point(q);
-
-                                  // Process the quadrature point on this boundary face.
-                                }
-                              break;
-                            }
-                        
-                        std::ofstream location_file("particle_paths/particle_id_" +
-                                                    std::to_string(particle.get_id()) + ".txt",
-                                                    std::ios::app);
-                        // We ultimately need to chose one of the quadrature points to use
-                        // for advecting the particle, so we find the closest quadrature point.
-                        unsigned int closest_q = numbers::invalid_unsigned_int;
-                        double min_distance_squared = std::numeric_limits<double>::max();
-                        for (unsigned int q=0; q<n_q_points; ++q)
+                        const double distance_squared =
+                          (particle.get_location() - fe_values.quadrature_point(q)).norm_square();
+                        if (distance_squared < min_distance_squared)
                           {
-                            principal_stresses_and_directions[q] = this->principal_stresses_and_directions(in,
-                                                                                                          out,
-                                                                                                          simulator_access,
-                                                                                                          q);
-
-                            const double distance_squared =
-                              (particle.get_location() - fe_values.quadrature_point(q)).norm_square();
-                            if (distance_squared < min_distance_squared)
-                              {
-                                min_distance_squared = distance_squared;
-                                closest_q = q;
-                              }
+                            min_distance_squared = distance_squared;
+                            closest_q = q;
                           }
-
-                        // Use the principal stress corresponding to the closest quadrature point to determine the move vector.
-                        Tensor<1,dim> movevector = principal_stresses_and_directions[closest_q][0].second;
-
-                        // ASPECT assigns a "direction" to the principal stresses, but in this case we eant the actual
-                        // advection direction to be physical. Dikes will proagrate anti-parallel to gravity due to magma
-                        // being buoyant, so adjust the sign of the "movevector" so that the dot product of gravity and
-                        // the principal stress is negative.
-                        const Tensor<1,dim> gravity_vector = this->get_gravity_model().gravity_vector(in.position[closest_q]);
-                        const double scale = movevector * gravity_vector < 0 ? cell->diameter() / 2.0 : -cell->diameter() / 2.0;
-
-                        // Principal directions are unit vectors, so scale the vector by half the diameter of the
-                        // cell that the particle is in so that we don't move the particle too far in a single jump.
-                        movevector *= scale;
-
-                        // Check to see whether the new location will place the particle outside of the model domain. 
-                        // If it does, we need to transfer the melt stored on the particle to the boundary face of the 
-                        // cell that the particle is CURRENTLY in.
-                        const Point<dim> new_location = particle.get_location() + movevector;
-                        particle.set_location(new_location);
-
-                        // DELETE FILE STUFF ONCE DONE WITH TESTING.
-                        location_file << jump;
-                        for (unsigned int d = 0; d < dim; ++d)
-                          location_file << ' ' << new_location[d];
-                        location_file << '\n';
                       }
+
+                    Tensor<1,dim> move_vector = principal_stresses_and_directions[closest_q][0].second;
+
+                    // Choose the direction opposite gravity, then move half a cell diameter.
+                    const Tensor<1,dim> gravity_vector = this->get_gravity_model().gravity_vector(in.position[closest_q]);
+                    const double scale = move_vector * gravity_vector < 0
+                                         ? cell->diameter() / 2.0
+                                         : -cell->diameter() / 2.0;
+                    move_vector *= scale;
+
+                    const Point<dim> new_location = particle.get_location() + move_vector;
+                    particle.set_location(new_location);
+
+                    location_file << jump;
+                    for (unsigned int d = 0; d < dim; ++d)
+                      location_file << ' ' << new_location[d];
+                    location_file << '\n';
                   }
               }
             teleport_particle_handler.sort_particles_into_subdomains_and_cells();
           }
 
+        // I still need to add the condition that checks to see if any particles
+        // remain AFTER the jump loop and are NOT within a boundary cell containing
+        // a face located on the top boundary. If any of these particles exist, then
+        // they need to be removed.
+
         // Clean up, destroy particles
-        teleport_particle_handler.clear_particles();
+        // teleport_particle_handler.clear_particles();
         return;
       }
 
@@ -398,7 +440,7 @@ namespace aspect
         AssertThrow(this->introspection().compositional_name_exists("surface_porosity"),
                     ExcMessage("The MostCompressiveStress teleporter only works if "
                                "there is a compositional field called surface_porosity."));
-      
+
         const unsigned int surface_porosity_idx = this->introspection().compositional_index_for_name("surface_porosity");
         AssertThrow(this->introspection().get_composition_descriptions()[surface_porosity_idx].type == aspect::CompositionalFieldDescription::generic,
                     ExcMessage("The MostCompressiveStress teleporter requires the surface_porosity field to use the generic advection method."));
