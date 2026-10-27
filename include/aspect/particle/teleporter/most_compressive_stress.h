@@ -69,9 +69,6 @@ namespace aspect
                                             const SimulatorAccess<dim> &simulator_access,
                                             const unsigned int q);
 
-          void
-          store_magma_as_surface_composition(const SimulatorAccess<dim> &simulator_access);
-
           /**
            * Generate particles, and update materialmodel outputs to reflect the removal of melt.
            */
