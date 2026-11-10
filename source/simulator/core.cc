@@ -1831,8 +1831,6 @@ namespace aspect
         }
 
 
-      // Possibly store data of plugins associated with cells
-      signals.pre_refinement_store_user_data(triangulation);
 
       // Finish periodic synchronization and mesh smoothing before preparing
       // solution transfer; either operation can change the other's flags.
@@ -1864,6 +1862,9 @@ namespace aspect
           computing_timer.leave_subsection("Refine mesh structure, part 1");
           return;
         }
+
+      // Possibly store data of plugins associated with cells
+      signals.pre_refinement_store_user_data(triangulation);
 
       system_trans.prepare_for_coarsening_and_refinement(x_system);
 
