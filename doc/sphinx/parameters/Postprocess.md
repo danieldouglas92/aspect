@@ -9,7 +9,7 @@
 :name: parameters:Postprocess/List_20of_20postprocessors
 **Default value:**
 
-**Pattern:** [MultipleSelection ODE statistics|Stokes residual|basic statistics|boundary densities|boundary pressures|boundary strain rate residual statistics|boundary velocity residual statistics|command|composition statistics|composition velocity statistics|core statistics|crystal preferred orientation|current surface|depth average|domain volume statistics|dynamic topography|entropy statistics|entropy viscosity statistics|finite element information|fluid velocity statistics|geoid|global statistics|gravity calculation|heat flux densities|heat flux map|heat flux statistics|heating statistics|load balance statistics|mass flux statistics|material statistics|matrix statistics|maximum depth of field|melt statistics|memory statistics|mobility statistics|particle count statistics|particle distribution score|particle distribution statistics|particle information|particles|point values|pressure statistics|rotation statistics|sea level|spherical velocity statistics|temperature statistics|timing statistics|topography|velocity boundary statistics|velocity statistics|viscous dissipation statistics|visualization|volume of fluid statistics ]
+**Pattern:** [MultipleSelection ODE statistics|Stokes residual|basic statistics|boundary densities|boundary pressures|boundary strain rate residual statistics|boundary velocity residual statistics|command|composition statistics|composition velocity statistics|core statistics|crystal preferred orientation|current surface|depth average|depth composition volume flux statistics|domain volume statistics|dynamic topography|entropy statistics|entropy viscosity statistics|finite element information|fluid velocity statistics|geoid|global statistics|gravity calculation|heat flux densities|heat flux map|heat flux statistics|heating statistics|load balance statistics|mass flux statistics|material statistics|matrix statistics|maximum depth of field|melt statistics|memory statistics|mobility statistics|particle count statistics|particle distribution score|particle distribution statistics|particle information|particles|point values|pressure statistics|rotation statistics|sea level|spherical velocity statistics|temperature statistics|timing statistics|topography|velocity boundary statistics|velocity statistics|viscous dissipation statistics|visualization|volume of fluid statistics ]
 
 **Documentation:** A comma separated list of postprocessor objects that should be run at the end of each time step. Some of these postprocessors will declare their own parameters which may, for example, include that they will actually do something only every so many time steps or years. Alternatively, the text &lsquo;all&rsquo; indicates that all available postprocessors should be run after each time step.
 
@@ -44,6 +44,10 @@ The following postprocessors are available:
 &lsquo;depth average&rsquo;: A postprocessor that computes depth averaged quantities and writes them into a file <depth_average.ext> in the output directory, where the extension of the file is determined by the output format you select. In addition to the output format, a number of other parameters also influence this postprocessor, and they can be set in the section `Postprocess/Depth average` in the input file.
 
 In the output files, the $x$-value of each data point corresponds to the depth, whereas the $y$-value corresponds to the simulation time. The time is provided in seconds or, if the global &ldquo;Use years instead of seconds&rdquo; parameter is set, in years.
+
+&lsquo;depth composition volume flux statistics&rsquo;: A postprocessor that computes some statistics about the depth composition volume flux across boundaries. For each provided depth, the depth composition volume flux is computed in the gravity  parallel direction. Therefore, positive flux is in the direction of gravity, and negative flux is opposite gravity. The volume flux is determined with the following expression: 1 / V * \int_{\Gamma_v} \mathbf v \cdot \mathbf g * C_i * dAWhere $V$ is the volume of the cell, $\Gamma_v$ is an integral over the volume of the cell, $\mathbf v$ is the velocity, $\mathbf g$ is the gravity vector, $C_i$ is the i-th compositional field, and dA is the area of the cell face with a face normal perpendicular to the gravity direction.
+
+
 
 &lsquo;domain volume statistics&rsquo;: A postprocessor that computes the total area (in 2d) or volume (in 3d) of the computational domain.
 
@@ -398,6 +402,17 @@ all|temperature|composition|adiabatic temperature|adiabatic pressure|adiabatic d
 **Pattern:** [Double 0...MAX_DOUBLE (inclusive)]
 
 **Documentation:** The time interval between each generation of graphical output files. A value of zero indicates that output should be generated in each time step. Units: \si{\year} if the &rsquo;Use years instead of seconds&rsquo; parameter is set; \si{\second} otherwise.
+::::
+
+(parameters:Postprocess/Depth_20composition_20volume_20flux_20statistics)=
+## **Subsection:** Postprocess / Depth composition volume flux statistics
+::::{dropdown} __Parameter:__ {ref}`Depths for flux evaluation<parameters:Postprocess/Depth_20composition_20volume_20flux_20statistics/Depths_20for_20flux_20evaluation>`
+:name: parameters:Postprocess/Depth_20composition_20volume_20flux_20statistics/Depths_20for_20flux_20evaluation
+**Default value:** 0.0
+
+**Pattern:** [List of <[Double -MAX_DOUBLE...MAX_DOUBLE (inclusive)]> of length 0...4294967295 (inclusive)]
+
+**Documentation:** The depths at which the fluxes are evaluated.
 ::::
 
 (parameters:Postprocess/Dynamic_20core_20statistics)=

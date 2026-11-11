@@ -50,8 +50,6 @@ namespace aspect
                                         update_normal_vectors    |
                                         update_quadrature_points | update_JxW_values);
 
-      std::vector<std::vector<double>> composition_values (this->n_compositional_fields(),std::vector<double> (quadrature_formula.size()));
-
       std::map<types::boundary_id, double> local_boundary_fluxes;
 
       MaterialModel::MaterialModelInputs<dim> in(fe_face_values.n_quadrature_points, this->n_compositional_fields());
