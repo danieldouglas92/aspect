@@ -1,0 +1,55 @@
+
+Number of active cells: 16 (on 3 levels)
+Number of degrees of freedom: 430 (162+25+81+81+81)
+
+*** Timestep 0:  t=0 years, dt=0 years
+   Solving temperature system... 0 iterations.
+   Solving solid1 system ... 0 iterations.
+   Solving solid2 system ... 0 iterations.
+   Solving Stokes system (GMG)... 12+0 iterations.
+      Relative nonlinear residuals (temperature, compositional fields, Stokes system): 1.20402e-16, 1.85644e-16, 1.85644e-16, 1.00037
+      Relative nonlinear residual (total system) after nonlinear iteration 1: 1.00037
+
+
+   WARNING: The nonlinear solver in the current timestep failed to converge.
+   Acting according to the parameter 'Nonlinear solver failure strategy':
+   Continuing to the next timestep even though solution is not fully converged.
+
+Number of active cells: 40 (on 4 levels)
+Number of degrees of freedom: 1,020 (386+55+193+193+193)
+
+*** Timestep 0:  t=0 years, dt=0 years
+   Solving temperature system... 0 iterations.
+   Solving solid1 system ... 0 iterations.
+   Solving solid2 system ... 0 iterations.
+   Solving Stokes system (GMG)... 22+0 iterations.
+      Relative nonlinear residuals (temperature, compositional fields, Stokes system): 1.36584e-16, 1.76262e-16, 1.76262e-16, 1.00021
+      Relative nonlinear residual (total system) after nonlinear iteration 1: 1.00021
+
+
+   WARNING: The nonlinear solver in the current timestep failed to converge.
+   Acting according to the parameter 'Nonlinear solver failure strategy':
+   Continuing to the next timestep even though solution is not fully converged.
+
+   Postprocessing:
+     Writing graphical output:     depth_vol_flux/solution/solution-00000
+     Volume fluxes through depth:  5000 m: -5e+04 // -2.5e+04 m^2/yr
+     Compositions min/max/mass:    1/1/1e+09 // 0.5/0.5/5e+08
+
+*** Timestep 1:  t=200 years, dt=200 years
+   Solving temperature system... 0 iterations.
+   Solving solid1 system ... 0 iterations.
+   Solving solid2 system ... 0 iterations.
+   Solving Stokes system (GMG)... 0+0 iterations.
+      Relative nonlinear residuals (temperature, compositional fields, Stokes system): 1.55956e-16, 1.41365e-16, 1.41365e-16, 5.5952e-08
+      Relative nonlinear residual (total system) after nonlinear iteration 1: 5.5952e-08
+
+
+   Postprocessing:
+     Writing graphical output:     depth_vol_flux/solution/solution-00001
+     Volume fluxes through depth:  5000 m: -5e+04 // -2.5e+04 m^2/yr
+     Compositions min/max/mass:    1/1/1e+09 // 0.5/0.5/5e+08
+
+Termination requested by criterion: end time
+
+

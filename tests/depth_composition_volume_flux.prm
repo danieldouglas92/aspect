@@ -1,0 +1,134 @@
+# For purely vertical, uniform flow, the flux at any given depth in this model
+# should be equal to |u| * area * composition
+############### Global parameters
+
+set Dimension                              = 2
+set Start time                             = 0
+set End time                               = 200
+set Use years instead of seconds           = true
+set Nonlinear solver scheme                = iterated Advection and Stokes
+set Max nonlinear iterations               = 1
+set CFL number                             = 1.0
+set Output directory                       = depth_vol_flux
+set Pressure normalization                 = surface
+set Surface pressure                       = 0
+set Maximum time step                      = 200
+set Use operator splitting                 = false
+set Adiabatic surface temperature          = 293
+
+# 10 km x 10 km box
+subsection Geometry model
+  set Model name = box
+
+  subsection Box
+    set X extent = 100e3
+    set Y extent = 10e3
+  end
+end
+
+# Uniform temperature of 293 K
+subsection Initial temperature model
+  set List of model names = function
+
+  subsection Function
+    set Function expression = 1000
+  end
+end
+
+subsection Boundary temperature model
+  set List of model names = box
+  set Fixed temperature boundary indicators   = top, bottom, left, right
+
+  subsection Box
+    set Bottom temperature = 1000
+    set Top temperature    = 1000
+    set Left temperature   = 1000
+    set Right temperature  = 1000
+  end
+end
+
+# Prescribe a solid x velocity of 0.001 m/yr and a solid
+# y velocity of 0.75 m/yr.
+subsection Boundary velocity model
+  set Prescribed velocity boundary indicators = top: function, bottom: function, left: function, right: function
+  subsection Function
+    set Function expression = 0.0;0.5
+  end
+end
+
+# porosity and bound_fluid are required compositional fields when
+# using the reactive fluid transport. Set the porosity field method
+# to 'darcy field' so that the fluid is advected with the Darcy
+# velocity.
+subsection Compositional fields
+  set Number of fields = 2
+  set Names of fields = solid1, solid2
+  set Compositional field methods = field
+end
+
+# Initialize a porosity of 2% (0.02) everywhere.
+subsection Initial composition model
+  set List of model names = function
+
+  subsection Function
+    set Variable names      = x,y
+    set Function expression = 1.0; 0.5
+  end
+end
+
+# 10 m/s2 vertical gravity
+subsection Gravity model
+  set Model name = vertical
+
+  subsection Vertical
+    set Magnitude = 10.0
+  end
+end
+
+# The reactive fluid transport model allows us to set the parameters which
+# influence fluid velocity, such as the fluid viscosity, fluid density, and
+# the reference permeability. We set the fluid weakening factors (shear to
+# bulk viscosity ratio, exponential fluid weakening factor) to 0 for
+# simplicity. We use the zero solubility fluid-solid reaction scheme to prevent
+# the fluid from partitioning into the solid.
+subsection Material model
+  set Model name = simpler
+
+  # Set the solid density to 3000 kg/m3, and set the minimum/maximum viscosity
+  # to 1e21 Pa s for an isoviscous model.
+  subsection Simpler model
+    set Viscosity = 1e21
+    set Reference density = 1000
+    set Reference specific heat = 1000
+    set Thermal expansion coefficient = 0.0
+    set Thermal conductivity = 0.0
+    set Reference temperature = 1000
+  end
+end
+
+# Set the global refinement to 1, bringing the global mesh to 2.5 km x 2.5 km.
+subsection Mesh refinement
+  set Initial adaptive refinement        = 1
+  set Initial global refinement          = 2
+  set Time steps between mesh refinement = 0
+  set Strategy =  minimum refinement function
+  subsection Minimum refinement function
+    set Coordinate system =  cartesian
+    set Variable names = x,y,t
+    set Function expression = if(x<=50e3, 3, 2)
+  end
+end
+
+# Output the darcy velocity
+subsection Postprocess
+  set List of postprocessors = visualization, depth composition volume flux statistics, composition statistics
+
+  subsection Depth composition volume flux statistics
+    set Depths for flux evaluation = 5e3, 1e3, 9e3
+  end
+
+  subsection Visualization
+    set Output format                 = vtu
+    set Time between graphical output = 0
+  end
+end
