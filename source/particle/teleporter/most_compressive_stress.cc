@@ -188,7 +188,7 @@ namespace aspect
         const unsigned int porosity_idx = simulator_access.introspection().compositional_index_for_name("porosity");
 
         std::vector<double> porosity_values(n_q_points);
-        const unsigned int surf_porosity_idx = simulator_access.introspection().compositional_index_for_name("surface_porosity");
+        const unsigned int surf_lava_idx = simulator_access.introspection().compositional_index_for_name("surface_lava_volume");
 
         // If the local melt volume exceeds the user-specified threshold, add a single particle at the center of the cell
         // that contains all of the melt within the cell.
@@ -200,7 +200,7 @@ namespace aspect
         // needs to be done explicitly before applying the melt from any particles in the currente cell as
         // a reaction rate.
         for (unsigned int q=0; q<in.n_evaluation_points(); ++q)
-          reaction_rate_outputs->reaction_rates[q][surf_porosity_idx] = -in.composition[q][surf_porosity_idx] / reaction_time_step_size;
+          reaction_rate_outputs->reaction_rates[q][surf_lava_idx] = -in.composition[q][surf_lava_idx] / reaction_time_step_size;
 
         // Now check to see if any particles ended up in the current cell from the advection of the particles.
         if (teleport_particle_handler.n_particles_in_cell(in.current_cell) > 0)
@@ -223,7 +223,7 @@ namespace aspect
 
                 // Apply the particle melt to the reaction rates based on the distance weights.
                 for (unsigned int q=0; q<in.n_evaluation_points(); ++q)
-                  reaction_rate_outputs->reaction_rates[q][surf_porosity_idx] += particle_melt * distance_weights[q] / reaction_time_step_size;
+                  reaction_rate_outputs->reaction_rates[q][surf_lava_idx] += particle_melt * distance_weights[q] / reaction_time_step_size;
               }
 
             while (teleport_particle_handler.n_particles_in_cell(in.current_cell) > 0)
@@ -413,9 +413,6 @@ namespace aspect
                              "Defines how many jumps a particle should do");
           prm.enter_subsection ("Most compressive stress");
           {
-            prm.declare_entry ("Maximum number of particles to generate", "100",
-                               Patterns::Integer (),
-                               "Defines the maximum number of particles to generate");
             prm.declare_entry ("Melt volume threshold", "1e50",
                                Patterns::Double (),
                                "Defines the melt volume threshold for teleportation");
@@ -437,13 +434,13 @@ namespace aspect
                     ExcMessage("The MostCompressiveStress teleporter only works if "
                                "there is a compositional field called porosity."));
 
-        AssertThrow(this->introspection().compositional_name_exists("surface_porosity"),
+        AssertThrow(this->introspection().compositional_name_exists("surface_lava_volume"),
                     ExcMessage("The MostCompressiveStress teleporter only works if "
-                               "there is a compositional field called surface_porosity."));
+                               "there is a compositional field called surface_lava_volume."));
 
-        const unsigned int surface_porosity_idx = this->introspection().compositional_index_for_name("surface_porosity");
-        AssertThrow(this->introspection().get_composition_descriptions()[surface_porosity_idx].type == aspect::CompositionalFieldDescription::generic,
-                    ExcMessage("The MostCompressiveStress teleporter requires the surface_porosity field to use the generic advection method."));
+        const unsigned int surface_lava_volume_idx = this->introspection().compositional_index_for_name("surface_lava_volume");
+        AssertThrow(this->introspection().get_composition_descriptions()[surface_lava_volume_idx].type == aspect::CompositionalFieldDescription::generic,
+                    ExcMessage("The MostCompressiveStress teleporter requires the surface_lava_volume field to use the generic advection method."));
 
         AssertThrow(this->get_parameters().use_operator_splitting,
                     ExcMessage("The MostCompressiveStress teleporter must be used with operator splitting."));
@@ -453,7 +450,6 @@ namespace aspect
           allowed_number_of_jumps = prm.get_integer ("Number of jumps");
           prm.enter_subsection ("Most compressive stress");
           {
-            // maximum_number_of_particles_to_generate = prm.get_integer ("Maximum number of particles to generate");
             melt_volume_threshold = prm.get_double ("Melt volume threshold");
             dike_extraction_depth = prm.get_double ("Dike extraction depth");
           }

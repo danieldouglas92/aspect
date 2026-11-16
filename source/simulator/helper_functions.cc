@@ -1930,6 +1930,7 @@ namespace aspect
 
                   material_model->evaluate(in, out);
                   signals.modify_reaction_outputs(SimulatorAccess<dim>(*this), in, out);
+                  signals.modify_reaction_outputs_2(SimulatorAccess<dim>(*this), in, out);
                   heating_model_manager.evaluate(in, out, heating_model_outputs);
 
                   for (unsigned int j=0; j<n_q_points; ++j)

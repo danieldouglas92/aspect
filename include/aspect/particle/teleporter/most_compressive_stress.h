@@ -83,7 +83,6 @@ namespace aspect
 
         private:
           unsigned int allowed_number_of_jumps;
-          //   unsigned int maximum_number_of_particles_to_generate;
           double melt_volume_threshold;
           double dike_extraction_depth;
 

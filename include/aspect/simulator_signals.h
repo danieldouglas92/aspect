@@ -178,6 +178,16 @@ namespace aspect
     modify_reaction_outputs;
 
     /**
+     * A signal that is triggered after the material model has been evaluated
+     * in compute_reactions(), this is just used for this specific branch to make
+     * sure that I can keep a constant magma body at a known location in the model.
+     */
+    boost::signals2::signal<void (const SimulatorAccess<dim> &,
+                                  const MaterialModel::MaterialModelInputs<dim> &,
+                                  MaterialModel::MaterialModelOutputs<dim> &)>
+    modify_reaction_outputs_2;
+
+    /**
      * A signal that is called after the computation of tangential boundary
      * conditions for which normal vectors are needed, i.e. calls to the
      * compute_no_normal_flux_constraints function for both the
