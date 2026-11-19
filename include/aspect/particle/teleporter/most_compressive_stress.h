@@ -58,6 +58,12 @@ namespace aspect
 
           bool new_teleportation_step() override;
 
+          double compute_dyke_velocity(const double local_melt_volume,
+                                       const unsigned int quadrature_index_of_highest_point,
+                                       const MaterialModel::MaterialModelInputs<dim> &in,
+                                       MaterialModel::MaterialModelOutputs<dim> &out,
+                                       const SimulatorAccess<dim> &simulator_access);
+
           void
           local_teleport_step(const typename ParticleHandler<dim>::particle_iterator &begin_particle,
                               const typename ParticleHandler<dim>::particle_iterator &end_particle,
@@ -83,9 +89,11 @@ namespace aspect
 
         private:
           unsigned int allowed_number_of_jumps;
-          //   unsigned int maximum_number_of_particles_to_generate;
           double melt_volume_threshold;
           double dike_extraction_depth;
+          double magma_density;
+          double magma_viscosity;
+          double critical_dyke_velocity;
 
           ParticleHandler<dim> teleport_particle_handler;
           bool teleport_particle_handler_initialized = false;

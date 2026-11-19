@@ -91,6 +91,28 @@ namespace aspect
 
 
       template <int dim>
+      double MostCompressiveStress<dim>::compute_dyke_velocity(const double local_melt_volume,
+                                                               const unsigned int closest_q,
+                                                               const MaterialModel::MaterialModelInputs<dim> &in,
+                                                               MaterialModel::MaterialModelOutputs<dim> &out,
+                                                               const SimulatorAccess<dim> &simulator_access)
+      {
+        std::array<std::pair<double, Tensor<1,dim>>, dim> principal_stress_at_highest_point;
+        principal_stress_at_highest_point = this->principal_stresses_and_directions(in,
+                                                                                    out,
+                                                                                    simulator_access,
+                                                                                    closest_q);
+        const Tensor<1,dim> gravity_vector = this->get_gravity_model().gravity_vector(in.position[closest_q]);
+        const double projection_angle = principal_stress_at_highest_point[0].second * gravity_vector / gravity_vector.norm();
+        const double rock_density     = out.densities[closest_q];
+        const double gamma_term       = gravity_vector.norm() * (rock_density - magma_density) * projection_angle;
+        const double dyke_velocity    = 2 / 27 / numbers::PI / numbers::PI * local_melt_volume * gamma_term * gamma_term / magma_viscosity;
+        return dyke_velocity;
+      }
+
+
+
+      template <int dim>
       std::array<std::pair<double, Tensor<1,dim>>, dim>
       MostCompressiveStress<dim>::principal_stresses_and_directions(const MaterialModel::MaterialModelInputs<dim> &in,
                                                                     MaterialModel::MaterialModelOutputs<dim> &out,
@@ -134,26 +156,20 @@ namespace aspect
                                                          const MaterialModel::MaterialModelInputs<dim> &in,
                                                          MaterialModel::MaterialModelOutputs<dim> &out)
       {
-        // This function is called during the loop over all cells in the compute_reactions step just
-        // after the material model has been evaluated. Therefore, we do not need to loop over all cells,
-        // but instead can just check if the current cell is valid and locally owned. If it is, then we
-        // compute the melt volume in that cell, and if it satisfies the criteria for generating a
-        // particle, then we assign all that volume to a single particle, and modify the reaction rates
-        // to remove all of the melt from the cell.
+        // What I want to do on this branch is extend this function so that it more self consistently deals
+        // with the transportation of porosity along a dyke. Ideally, this means that I would do a couple of
+        // things. 
+        // 1. Distribute the melt volume stored on a particle exclusively along the top BOUNDARY of the model,
+        //    not just the entire top CELL of the model. 
+        // 2. To nucleate a dyke, check whether the tip velocity exceeds some critical value. To do this, we
+        //    still need to compute the total magma volume, but then we also need to determine the angle of the
+        //    dyke trajectory relative to gravity.
+        // 3. After each particle jump, determine this same criteria for the tip velocity. If the tip velocity
+        //    drops below some value, then we stop the advection of the particle.
+        // 4. If this happens, then we need to REDISTRIBUTE the melt volume WITHIN the current cell, as porosity.
 
-        // I THINK I HAVE AN IDEA FOR HOW TO ACHIEVE EVERYTHING THAT I NEED TO WITHOUT DOING TOO MUCH MODIFICATION
-        // WITHIN THIS LOOP, SINCE THIS IS THE ONLY WAY THAT WE CAN DIRECTLY MODIFY THE MATERIAL MODEL INPUTS REACTIONS
-        // WE NEED TO BOTH REMOVE POROSITY FROM DEPTH AND ADD POROSITY TO THE SURFACE. THE TRICK I THINK IS TO NOT DELETE
-        // PARTICLES IN THE ADVECTION FUNCTION BELOW. WHAT WE NEED TO DO INSTEAD IS ITERATE OVER EACH PARTICLE IN THE
-        // ADVECTION FUNCTION AND EITHER:
-        //    1. STOP THE ADVECTION AS SOON AS THE PARTICLE REACHES A CELL THAT IS ON THE MODEL BOUNDARY CONTAINING
-        //       A FACE THAT LIES ON THE TOP BOUNDARY, OR
-        //    2. CONTINUE ADVECTION UNTIL THE NUMBER OF JUMPS IS REACHED. IF THE PARTICLES DOES NOT END UP IN A CELL
-        //       ON THE TOP BOUNDARY, THEN IT SHOULD BE REMOVED.
-        // BECAUSE THIS WILL PREVENT PARTICLES FROM BEING REMOVED, THEN IN THIS FUNCTION, WE CAN CHECK EACH CELL THAT
-        // CONTAINS A PARTICLE. IF IT DOES, WE KNOW THAT THIS CELL NEEDS TO HAVE THE MELT ON THAT PARTICLE ASSIGNED
-        // TO THE REACTION RATES IN THE CURRENT CELL ON THE SURFACE NODES. THEN, WE JUST NEED TO MAKE SURE WE LOOP OVER
-        // THESE PARTICLES FIRST, AND DELETE THEM BEFORE WE MAKE ANY NEW PARTICLES.
+        // I think that this means that I need to remove the requirement for a compositional field called "surface_porosity".
+        // For now though, let's just pretend that we don't have to worry about this.
 
         // If the current cell being processed in compute_reactions is not valid or locally owned, immediate skip.
         if (in.current_cell.state() != IteratorState::valid || !in.current_cell->is_locally_owned())
@@ -231,23 +247,39 @@ namespace aspect
                 teleport_particle_handler.particles_in_cell(in.current_cell).begin());
           }
 
+        // Extract the values of the porosity compositional field.
+        fe_values[this->introspection().extractors.compositional_fields[porosity_idx]]
+        .get_function_values(this->get_solution(),
+                                 porosity_values);
 
         // Integrate the total melt volume within the cell.
         double local_melt_volume = 0;
+        unsigned int quadrature_index_of_highest_point = 0;
+        Point<dim> highest_point;
         for (unsigned int q=0; q<n_q_points; ++q)
           {
             const Point<dim> &quadrature_point = fe_values.quadrature_point(q);
-            fe_values[this->introspection().extractors.compositional_fields[porosity_idx]]
-            .get_function_values(this->get_solution(),
-                                 porosity_values);
             if (this->get_geometry_model().depth(quadrature_point) < dike_extraction_depth)
               local_melt_volume += porosity_values[q] * fe_values.JxW(q);
+
+            // Check to see which point in the cell has the highest melt volume so that 
+            // we assign the particle to this point.
+            if (porosity_values[q] * fe_values.JxW(q) > porosity_values[quadrature_index_of_highest_point] * fe_values.JxW(quadrature_index_of_highest_point))
+              {
+                quadrature_index_of_highest_point = q;
+                highest_point = fe_values.quadrature_point(q);
+              }
           }
 
-        if (local_melt_volume > melt_volume_threshold)
+        const double dyke_velocity = compute_dyke_velocity(local_melt_volume,
+                                                           quadrature_index_of_highest_point,
+                                                           in,
+                                                           out,
+                                                           simulator_access);
+        if (dyke_velocity > critical_dyke_velocity)
           {
             dealii::Particles::Particle<dim> particle;
-            particle.set_location(in.current_cell->center());
+            particle.set_location(highest_point);
             particle.set_id(next_particle_id++);
 
             typename Particle::ParticleHandler<dim>::particle_iterator it =
@@ -370,6 +402,17 @@ namespace aspect
                           }
                       }
 
+                    const double local_melt_volume = particle.get_properties()[0];
+
+                    const double dyke_velocity = compute_dyke_velocity(local_melt_volume,
+                                                                      closest_q,
+                                                                      in,
+                                                                      out,
+                                                                      simulator_access);
+
+                    if (dyke_velocity < critical_dyke_velocity)
+                      continue;
+
                     Tensor<1,dim> move_vector = principal_stresses_and_directions[closest_q][0].second;
 
                     // Choose the direction opposite gravity, then move half a cell diameter.
@@ -413,12 +456,18 @@ namespace aspect
                              "Defines how many jumps a particle should do");
           prm.enter_subsection ("Most compressive stress");
           {
-            prm.declare_entry ("Maximum number of particles to generate", "100",
-                               Patterns::Integer (),
-                               "Defines the maximum number of particles to generate");
+            prm.declare_entry ("Magma viscosity", "100",
+                               Patterns::Double (),
+                               "Defines the magma viscosity");
+            prm.declare_entry ("Magma density", "2300.0",
+                               Patterns::Double (),
+                               "Defines the magma density");
             prm.declare_entry ("Melt volume threshold", "1e50",
                                Patterns::Double (),
                                "Defines the melt volume threshold for teleportation");
+            prm.declare_entry ("Critical dyke velocity", "0",
+                               Patterns::Double (),
+                               "Defines the critical dyke velocity for teleportation");                               
             prm.declare_entry ("Dike extraction depth", "0.0",
                                Patterns::Double (),
                                "Defines the dike extraction depth for teleportation");
@@ -453,9 +502,11 @@ namespace aspect
           allowed_number_of_jumps = prm.get_integer ("Number of jumps");
           prm.enter_subsection ("Most compressive stress");
           {
-            // maximum_number_of_particles_to_generate = prm.get_integer ("Maximum number of particles to generate");
-            melt_volume_threshold = prm.get_double ("Melt volume threshold");
-            dike_extraction_depth = prm.get_double ("Dike extraction depth");
+            magma_viscosity        = prm.get_double ("Magma viscosity");
+            magma_density          = prm.get_double ("Magma density");
+            melt_volume_threshold  = prm.get_double ("Melt volume threshold");
+            dike_extraction_depth  = prm.get_double ("Dike extraction depth");
+            critical_dyke_velocity = prm.get_double ("Critical dyke velocity");
           }
           prm.leave_subsection ();
         }
