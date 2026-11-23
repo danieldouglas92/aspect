@@ -177,6 +177,11 @@ namespace aspect
                                   MaterialModel::MaterialModelOutputs<dim> &)>
     modify_reaction_outputs;
 
+    boost::signals2::signal<void (const SimulatorAccess<dim> &,
+                                  const MaterialModel::MaterialModelInputs<dim> &,
+                                  MaterialModel::MaterialModelOutputs<dim> &)>
+    modify_reaction_outputs_2;
+
     /**
      * A signal that is called after the computation of tangential boundary
      * conditions for which normal vectors are needed, i.e. calls to the
