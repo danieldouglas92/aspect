@@ -277,7 +277,6 @@ namespace aspect
         // advects them along the most compressive stress direction. It does this instantaneously, until
         // the particle either exits the model domain, or reaches a maximum of number of allowed particle
         // "jumps".
-        std::cout << "Advecting particles..." << std::endl;
         if (!teleport_particle_handler_initialized)
           {
             teleport_particle_handler.initialize(simulator_access.get_triangulation(),
