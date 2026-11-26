@@ -30,6 +30,9 @@
 #include <aspect/simulator_access.h>
 #include <aspect/simulator_signals.h>
 
+#include <map>
+#include <vector>
+
 namespace aspect
 {
   namespace Particle
@@ -81,7 +84,17 @@ namespace aspect
            */
           void advect_particles(const SimulatorAccess<dim> &simulator_access);
 
+          /**
+           * Locally recorded particle paths (particle id -> positions) since the last
+           * call to clear_particle_paths().
+           */
+          const std::map<types::particle_index, std::vector<Point<dim>>> &
+          get_particle_paths() const;
+
+          void clear_particle_paths();
+
         private:
+          std::map<types::particle_index, std::vector<Point<dim>>> particle_paths;
           unsigned int allowed_number_of_jumps;
           double melt_volume_threshold;
           double dike_extraction_depth;

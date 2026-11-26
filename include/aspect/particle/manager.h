@@ -169,6 +169,12 @@ namespace aspect
         get_particle_handler();
 
         /**
+         * Return the particle teleporter, or a null pointer if none is used.
+         */
+        Teleporter::Interface<dim> *
+        get_teleporter() const;
+
+        /**
          * Copy the state of particle handler @p from_particle_handler into the
          * particle handler @p to_particle_handler. This will copy
          * all particles and properties and leave @p to_particle_handler

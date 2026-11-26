@@ -173,6 +173,15 @@ namespace aspect
 
 
     template <int dim>
+    Teleporter::Interface<dim> *
+    Manager<dim>::get_teleporter() const
+    {
+      return teleporter.get();
+    }
+
+
+
+    template <int dim>
     void
     Manager<dim>::copy_particle_handler (const Particles::ParticleHandler<dim> &from_particle_handler,
                                          Particles::ParticleHandler<dim> &to_particle_handler) const

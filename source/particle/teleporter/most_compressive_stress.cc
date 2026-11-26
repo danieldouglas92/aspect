@@ -256,18 +256,7 @@ namespace aspect
             const std::vector<double> stored_melt = {local_melt_volume};
             it->set_properties(stored_melt);
 
-            // Create a fresh ASCII file for this particle and record its initial location.
-            // DELETE THIS FILE STUFF ONCE DONE WITH TESTING
-            std::ofstream location_file("particle_paths/particle_id_" +
-                                        std::to_string(it->get_id()) + ".txt");
-
-            location_file << "# step";
-            for (unsigned int d = 0; d < dim; ++d)
-              location_file << " x" << d;
-            location_file << '\n' << 0;
-            for (unsigned int d = 0; d < dim; ++d)
-              location_file << ' ' << it->get_location()[d];
-            location_file << '\n';
+            particle_paths[it->get_id()] = {it->get_location()};
 
             // Remove the melt from the cell by setting the porosity reaction term
             // Also remove any melt stored as a surface composition.
@@ -353,9 +342,9 @@ namespace aspect
 
                 for (auto &particle : teleport_particle_handler.particles_in_cell(cell))
                   {
-                    std::ofstream location_file("particle_paths/particle_id_" +
-                                                std::to_string(particle.get_id()) + ".txt",
-                                                std::ios::app);
+                    std::vector<Point<dim>> &path = particle_paths[particle.get_id()];
+                    if (path.empty())
+                      path.push_back(particle.get_location());
 
                     unsigned int closest_q = numbers::invalid_unsigned_int;
                     double min_distance_squared = std::numeric_limits<double>::max();
@@ -381,11 +370,7 @@ namespace aspect
 
                     const Point<dim> new_location = particle.get_location() + move_vector;
                     particle.set_location(new_location);
-
-                    location_file << jump;
-                    for (unsigned int d = 0; d < dim; ++d)
-                      location_file << ' ' << new_location[d];
-                    location_file << '\n';
+                    path.push_back(new_location);
                   }
               }
             teleport_particle_handler.sort_particles_into_subdomains_and_cells();
@@ -399,6 +384,23 @@ namespace aspect
         // Clean up, destroy particles
         // teleport_particle_handler.clear_particles();
         return;
+      }
+
+
+
+      template <int dim>
+      const std::map<types::particle_index, std::vector<Point<dim>>> &
+      MostCompressiveStress<dim>::get_particle_paths() const
+      {
+        return particle_paths;
+      }
+
+
+
+      template <int dim>
+      void MostCompressiveStress<dim>::clear_particle_paths()
+      {
+        particle_paths.clear();
       }
 
 
